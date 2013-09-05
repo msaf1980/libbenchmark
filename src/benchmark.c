@@ -9,12 +9,13 @@
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
+#include <mach/mach_time.h>
 #endif
 
 #include "benchmark.h"
 
-#define MILLIS 1000000L
-#define NANOS 1000000000L
+#define MILLIS 1E6
+#define NANOS 1E9
 
 typedef struct nano_clock {
 	int64_t	sec;
@@ -22,7 +23,7 @@ typedef struct nano_clock {
 } nano_clock;
 
 struct B {
-	char *						key;
+	const char *				key;
 	int							n;
 	int 						running;
 	void *						clock_token;
@@ -33,7 +34,7 @@ struct B {
 	b_bench_method		 		bench_method;
 };
 
-char *
+const char *
 b_key(struct B * b) {
 	return b->key;
 }
@@ -45,35 +46,17 @@ b_count(struct B * b) {
 
 #ifdef __MACH__
 
-#define INIT_CLOCK(B)		init_clock(B)
-#define GET_TIMESPEC(B, nc)	get_timespec(B, nc)
-#define FREE_CLOCK(B)		free_clock(B)
+#define GET_TIMESPEC(nc)	get_timespec(nc)
 
 void
-init_clock(struct B * b) {
-	clock_serv_t cclock;
-	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-	b->clock_token = (void *)&cclock;
-}
-
-void
-get_timespec(struct B * b, nano_clock * nc) {
-	mach_timespec_t mts;
-	clock_get_time(*(clock_serv_t *)b->clock_token, &mts);
-	nc->sec = mts.tv_sec;
-	nc->nsec = mts.tv_nsec;
-}
-
-void
-free_clock(struct B * b) {
-	mach_port_deallocate(mach_task_self(), *(clock_serv_t *)b->clock_token);
+get_timespec(nano_clock * nc) {
+	nc->nsec = mach_absolute_time();
+	nc->sec = nc->nsec / NANOS;
 }
 
 #else
 
-#define INIT_CLOCK(B)
-#define GET_TIMESPEC(B, nc)	get_timespec(nc)
-#define FREE_CLOCK(B)
+#define GET_TIMESPEC(nc)	get_timespec(nc)
 
 void
 get_timespec(nano_clock * nc) {
@@ -88,7 +71,7 @@ get_timespec(nano_clock * nc) {
 int
 b_reset_timer(struct B * b) {
 	if(b->running) {
-		GET_TIMESPEC(b, &b->start_time);
+		GET_TIMESPEC(&b->start_time);
 	}
 	b->ns_duration = 0;
 
@@ -98,8 +81,8 @@ b_reset_timer(struct B * b) {
 int
 b_start_timer(struct B * b) {
 	if(!b->running) {
-		GET_TIMESPEC(b, &b->end_time);
-		b->running = 1;
+		GET_TIMESPEC(&b->start_time);
+		b->running = 0;
 	}
 
 	return B_SUCCESS;
@@ -108,61 +91,64 @@ b_start_timer(struct B * b) {
 int
 b_stop_timer(struct B * b) {
 	if(b->running) {
-		GET_TIMESPEC(b, &b->end_time);
+		GET_TIMESPEC(&b->end_time);
 		if (b->end_time.nsec - b->start_time.nsec < 0) {
 			printf("Invalid nsec\n");
 		}
 		b->s_duration += b->end_time.sec - b->start_time.sec;
 		b->ns_duration += b->end_time.nsec - b->start_time.nsec;
 		
-		b->running = 0;
+		b->running = 1;
 	}
 
 	return B_SUCCESS;
 }
 
 int
-b_exec_bench(struct BenchmarkResult ** result, int count, char * key, b_bench_method bench_method) {
+b_exec_bench(struct BenchmarkResult * result, int count, const char * key, b_bench_method bench_method) {
+	result->count = count;
+	result->key = key;
+
 	struct B b;
 	b.key = key;
 	b.n = count;
-	b.running = 0;
+	b.running = 1;
 	b.bench_method = bench_method;
-
-	INIT_CLOCK(&b);
 
 	b_reset_timer(&b);
 	b_start_timer(&b);
 	b.bench_method(&b);
 	b_stop_timer(&b);
 
-	FREE_CLOCK(&b);
+	double ms = (double)(b.ns_duration / MILLIS);
+	double s = (double)(b.ns_duration / NANOS);
 
-	(*result)->key = key;
-	(*result)->count = count;
-	(*result)->ns_per_op = 0;
-	(*result)->ms_per_op = 0;
-	(*result)->s_per_op = 0;
-	(*result)->s_duration = b.s_duration;
-	(*result)->s_mean = 0;
-	(*result)->s_median = 0;
-	(*result)->s_avg = 0;
-	(*result)->ns_duration = b.ns_duration;
-	(*result)->ns_mean = 0;
-	(*result)->ns_median = 0;
-	(*result)->ns_avg = 0;
+	result->key = key;
+	result->count = count;
+	result->ns_per_op = (double)(b.ns_duration / count);
+	result->ms_per_op = ms / count;
+	result->s_per_op = s / count;
+	result->ops_per_s = (double)(count / b.ns_duration);
+	result->ops_per_ms = (double)(count / ms);
+	result->ops_per_s = (double)(count / s);
+	result->s_duration = b.s_duration;
+	result->s_mean = 0;
+	result->s_median = 0;
+	result->s_avg = 0;
+	result->ns_duration = b.ns_duration;
+	result->ns_mean = 0;
+	result->ns_median = 0;
+	result->ns_avg = 0;
 
 	return B_SUCCESS;
 }
 
 int
 b_print_result(struct BenchmarkResult * result) {
-	printf("%20s\t[%10d]\t%8.4f ns/op\t\t%12.4f op/ms\t\t%12.4f op/s\n",
-		result->key,
-		result->count,
-		(double)result->ns_per_op / result->count,
-		(double)result->ms_per_op / result->count,
-		(double)result->s_per_op / result->count);
+	printf("\n%12s\t[%10d]\t[ %8.4f ns/op ]", result->key, result->count, result->ns_per_op);
+	printf("\t\t%12.8f op/ms\t\t%12.4f op/s\n\n",
+		result->ops_per_ms,
+		result->ops_per_s);
 
 	return B_SUCCESS;
 }
