@@ -25,3 +25,5 @@ build/Testing/Temporary/LastTest.log
 build/bin/example_c
 
 build/example/CMakeFiles/example_c.dir/C.includecache
+
+build/src/CMakeFiles/benchmark.dir/C.includecache
