@@ -8,6 +8,9 @@
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
+#else
+#include <iostream>
+using namespace std;
 #endif
 
 #include "benchmark.h"
@@ -68,18 +71,20 @@ free_clock(struct B * b) {
 
 void
 init_clock(struct B * b) {
+	b->clock_token = NULL;
 }
 
 void
 get_timespec(struct B * b, nano_clock * nc) {
 	timespec ts;
-	clock_gettime(CLOCK_NONOTONIC, &ts);
-	nc->sec = ts->ts_sec;
-	nc->nsec = ts->ts_nsec;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	nc->sec = ts.ts_sec;
+	nc->nsec = ts.ts_nsec;
 }
 
 void
 free_clock(struct B * b) {
+	b->clock_token = NULL;
 }
 
 #endif
