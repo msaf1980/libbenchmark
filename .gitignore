@@ -15,3 +15,13 @@
 *.exe
 *.out
 *.app
+
+build/Testing/Temporary/CTestCostData.txt
+
+build/Testing/Temporary/CTestCostData.txt
+
+build/Testing/Temporary/LastTest.log
+
+build/bin/example_c
+
+build/example/CMakeFiles/example_c.dir/C.includecache

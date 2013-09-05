@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <time.h>
 
 void
 benchmark_method(B * b) {
@@ -12,6 +13,7 @@ benchmark_method(B * b) {
 
 	for(i = 0; i < b_count(b); i++) {
 		/* Do some work here */
+		sleep(1);
 	}
 	b_stop_timer(b);
 	/* Do cleanup here */
