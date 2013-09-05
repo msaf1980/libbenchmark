@@ -46,8 +46,6 @@ b_count(struct B * b) {
 
 #ifdef __MACH__
 
-#define GET_TIMESPEC(nc)	get_timespec(nc)
-
 void
 get_timespec(nano_clock * nc) {
 	nc->nsec = mach_absolute_time();
@@ -55,8 +53,6 @@ get_timespec(nano_clock * nc) {
 }
 
 #else
-
-#define GET_TIMESPEC(nc)	get_timespec(nc)
 
 void
 get_timespec(nano_clock * nc) {
@@ -71,7 +67,7 @@ get_timespec(nano_clock * nc) {
 int
 b_reset_timer(struct B * b) {
 	if(b->running) {
-		GET_TIMESPEC(&b->start_time);
+		get_timespec(&b->start_time);
 	}
 	b->ns_duration = 0;
 
@@ -81,7 +77,7 @@ b_reset_timer(struct B * b) {
 int
 b_start_timer(struct B * b) {
 	if(!b->running) {
-		GET_TIMESPEC(&b->start_time);
+		get_timespec(&b->start_time);
 		b->running = 0;
 	}
 
@@ -91,7 +87,7 @@ b_start_timer(struct B * b) {
 int
 b_stop_timer(struct B * b) {
 	if(b->running) {
-		GET_TIMESPEC(&b->end_time);
+		get_timespec(&b->end_time);
 		if (b->end_time.nsec - b->start_time.nsec < 0) {
 			printf("Invalid nsec\n");
 		}
