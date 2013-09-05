@@ -8,9 +8,6 @@
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
-#else
-/*#include <iostream>*/
-using namespace std;
 #endif
 
 #include "benchmark.h"
@@ -47,6 +44,10 @@ b_count(struct B * b) {
 
 #ifdef __MACH__
 
+#define INIT_CLOCK(B)		init_clock(B)
+#define GET_TIMESPEC(B, nc)	get_timespec(B, nc)
+#define FREE_CLOCK(B)		free_clock(B)
+
 void
 init_clock(struct B * b) {
 	clock_serv_t cclock;
@@ -69,22 +70,16 @@ free_clock(struct B * b) {
 
 #else
 
-void
-init_clock(struct B * b) {
-	b->clock_token = NULL;
-}
+#define INIT_CLOCK(B)
+#define GET_TIMESPEC(B, nc)	get_timespec(nc)
+#define FREE_CLOCK(B)
 
 void
-get_timespec(struct B * b, nano_clock * nc) {
-	timespec ts;
+get_timespec(nano_clock * nc) {
+	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	nc->sec = ts.ts_sec;
 	nc->nsec = ts.ts_nsec;
-}
-
-void
-free_clock(struct B * b) {
-	b->clock_token = NULL;
 }
 
 #endif
@@ -92,7 +87,7 @@ free_clock(struct B * b) {
 int
 b_reset_timer(struct B * b) {
 	if(b->running) {
-		get_timespec(b, &b->start_time);
+		GET_TIMESPEC(b, &b->start_time);
 	}
 	b->ns_duration = 0;
 
@@ -102,7 +97,7 @@ b_reset_timer(struct B * b) {
 int
 b_start_timer(struct B * b) {
 	if(!b->running) {
-		get_timespec(b, &b->end_time);
+		GET_TIMESPEC(b, &b->end_time);
 		b->running = 1;
 	}
 
@@ -112,7 +107,8 @@ b_start_timer(struct B * b) {
 int
 b_stop_timer(struct B * b) {
 	if(b->running) {
-		get_timespec(b, &b->end_time);
+		GET_TIMESPEC(b, &b->end_time);
+		//get_timespec(b, &b->end_time);
 		if (b->end_time.nsec - b->start_time.nsec < 0) {
 			printf("Invalid nsec\n");
 		}
@@ -133,14 +129,14 @@ b_exec_bench(struct BenchmarkResult ** result, int count, char * key, b_bench_me
 	b.running = 0;
 	b.bench_method = bench_method;
 
-	init_clock(&b);
+	INIT_CLOCK(&b);
 
 	b_reset_timer(&b);
 	b_start_timer(&b);
 	b.bench_method(&b);
 	b_stop_timer(&b);
 
-	free_clock(&b);
+	FREE_CLOCK(&b);
 
 	(*result)->key = key;
 	(*result)->count = count;
