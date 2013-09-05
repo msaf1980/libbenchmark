@@ -78,8 +78,8 @@ void
 get_timespec(nano_clock * nc) {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
-	nc->sec = ts.ts_sec;
-	nc->nsec = ts.ts_nsec;
+	nc->sec = ts.tv_sec;
+	nc->nsec = ts.tv_nsec;
 }
 
 #endif
@@ -108,7 +108,6 @@ int
 b_stop_timer(struct B * b) {
 	if(b->running) {
 		GET_TIMESPEC(b, &b->end_time);
-		//get_timespec(b, &b->end_time);
 		if (b->end_time.nsec - b->start_time.nsec < 0) {
 			printf("Invalid nsec\n");
 		}
