@@ -106,10 +106,13 @@ b_stop_timer(struct B * b) {
 
 int
 b_exec_bench(struct BenchmarkResult * result, int count, const char * key, b_bench_method bench_method) {
+	struct B b;
+	double ms;
+	double s;
+
 	result->count = count;
 	result->key = key;
 
-	struct B b;
 	b.key = key;
 	b.n = count;
 	b.running = 1;
@@ -120,8 +123,8 @@ b_exec_bench(struct BenchmarkResult * result, int count, const char * key, b_ben
 	b.bench_method(&b);
 	b_stop_timer(&b);
 
-	double ms = (double)(b.ns_duration / MILLIS);
-	double s = (double)(b.ns_duration / NANOS);
+	ms = (double)(b.ns_duration / MILLIS);
+	s = (double)(b.ns_duration / NANOS);
 
 	result->key = key;
 	result->count = count;
