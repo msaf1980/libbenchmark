@@ -1,9 +1,9 @@
 mkdir gtest
 pushd gtest
-wget http://googletest.googlecode.com/files/gtest-1.6.0.zip
-unzip gtest-1.6.0.zip -qq
+wget --quiet http://googletest.googlecode.com/files/gtest-1.6.0.zip
+unzip -qq gtest-1.6.0.zip
 pushd gtest-1.6.0
-cmake -DCMAKE_BUILD_TYPE=Release
+cmake --quiet -DCMAKE_BUILD_TYPE=Release
 make
 sudo cp libgtest* /usr/lib
 sudo mkdir /usr/include/gtest
