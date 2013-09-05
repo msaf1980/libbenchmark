@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/c/vizidrix/src/github.com/vizidrix/libbenchmark/src/benchmark.c
+assert.h
+-
+stdio.h
+-
+stdlib.h
+-
+stdint.h
+-
+time.h
+-
+sys/time.h
+-
+mach/clock.h
+-
+mach/mach.h
+-
+benchmark.h
+/c/vizidrix/src/github.com/vizidrix/libbenchmark/src/benchmark.h
+
+/c/vizidrix/src/github.com/vizidrix/libbenchmark/src/benchmark.h
+stdarg.h
+-
+stdlib.h
+-
+stdint.h
+-
+

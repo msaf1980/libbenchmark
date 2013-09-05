@@ -1,0 +1,2 @@
+/usr/bin/ar cr ../lib/libbenchmark.a  CMakeFiles/benchmark.dir/benchmark.c.o
+/usr/bin/ranlib ../lib/libbenchmark.a

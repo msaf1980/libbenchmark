@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../src/benchmark.h
+stdarg.h
+-
+stdlib.h
+-
+stdint.h
+-
+
+/c/vizidrix/src/github.com/vizidrix/libbenchmark/example/example.c
+src/benchmark.h
+-
+stddef.h
+-
+stdio.h
+-
+
