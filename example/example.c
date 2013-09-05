@@ -1,11 +1,5 @@
 #include <src/benchmark.h>
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <time.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 void
@@ -36,7 +30,6 @@ benchmark_example() {
 int
 main() {
 	benchmark_example();
-	
 
 	return 0;
 }
