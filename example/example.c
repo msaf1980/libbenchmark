@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 
 void
 benchmark_method(B * b) {

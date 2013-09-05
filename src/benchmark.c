@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #ifdef __MACH__
 #include <mach/clock.h>
