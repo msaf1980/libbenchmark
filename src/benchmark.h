@@ -9,10 +9,12 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 
+typedef char (* key_t)[20];
+
 typedef struct B B;
 
 typedef struct BenchmarkResult {
-	const char *		key;
+	key_t			key;
 	int 			count;
 	double			ns_per_op;
 	double			ms_per_op;
@@ -21,13 +23,12 @@ typedef struct BenchmarkResult {
 	double			ops_per_ms;
 	double			ops_per_s;
 	uint64_t		s_duration;
-	uint64_t		s_mean;
-	uint64_t		s_median;
-	uint64_t		s_avg;
 	uint64_t		ns_duration;
-	uint64_t		ns_mean;
-	uint64_t		ns_median;
-	uint64_t		ns_avg;
+	/* Statistics */
+	double			s_mean;
+	double			s_median;
+	double			ns_mean;
+	double			ns_median;
 } BenchmarkResult;
 
 typedef void (*b_bench_method)(struct B * b);
@@ -35,13 +36,13 @@ typedef void (*b_bench_method)(struct B * b);
 #define B_SUCCESS			0
 #define B_ERROR				(-50000)
 
-const char * b_key(struct B * b);
+key_t b_key(struct B * b);
 int b_count(struct B * b);
 
-int b_reset_timer(struct B * b);
+void b_sample(struct B * b, int index);
 int b_start_timer(struct B * b);
 int b_stop_timer(struct B * b);
-int b_exec_bench(struct BenchmarkResult * result, int count, const char * key, b_bench_method bench_method);
+int b_exec_bench(struct BenchmarkResult * result, int count, key_t key, b_bench_method bench_method);
 int b_print_result(struct BenchmarkResult * result);
 
 #ifdef __cplusplus

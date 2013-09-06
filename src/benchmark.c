@@ -4,12 +4,15 @@
 #include <stdint.h>
 #include <time.h>
 #include <sys/time.h>
-#include <unistd.h>
+#include <locale.h>
+
 
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
 #include <mach/mach_time.h>
+#else
+#include <unistd.h>
 #endif
 
 #include "benchmark.h"
@@ -23,19 +26,20 @@ typedef struct nano_clock {
 } nano_clock;
 
 struct B {
-	const char *				key;
+	key_t						key;
 	int							n;
 	int 						running;
-	void *						clock_token;
+	void						* clock_token;
 	struct nano_clock 			start_time;
 	struct nano_clock			end_time;
+	uint64_t					* samples;
 	uint64_t					s_duration;
 	uint64_t					ns_duration;
 	b_bench_method		 		bench_method;
 };
 
-const char *
-b_key(struct B * b) {
+key_t
+b_get_key(struct B * b) {
 	return b->key;
 }
 
@@ -46,6 +50,11 @@ b_count(struct B * b) {
 
 #ifdef __MACH__
 
+inline uint64_t
+get_nanos() {
+	return mach_absolute_time();
+}
+
 void
 get_timespec(nano_clock * nc) {
 	nc->nsec = mach_absolute_time();
@@ -53,6 +62,13 @@ get_timespec(nano_clock * nc) {
 }
 
 #else
+
+inline uint64_t
+get_nanos() {
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_nsec;
+}
 
 void
 get_timespec(nano_clock * nc) {
@@ -64,36 +80,17 @@ get_timespec(nano_clock * nc) {
 
 #endif
 
-int
-b_reset_timer(struct B * b) {
-	if(b->running) {
-		get_timespec(&b->start_time);
-	}
-	b->ns_duration = 0;
-
-	return B_SUCCESS;
+inline void
+b_sample(struct B * b, int index) {
+	b->samples[index] = get_nanos();
 }
 
 int
 b_start_timer(struct B * b) {
 	if(!b->running) {
+		printf("starting");
 		get_timespec(&b->start_time);
-		b->running = 0;
-	}
-
-	return B_SUCCESS;
-}
-
-int
-b_stop_timer(struct B * b) {
-	if(b->running) {
-		get_timespec(&b->end_time);
-		if (b->end_time.nsec - b->start_time.nsec < 0) {
-			printf("Invalid nsec\n");
-		}
-		b->s_duration += b->end_time.sec - b->start_time.sec;
-		b->ns_duration += b->end_time.nsec - b->start_time.nsec;
-		
+		b->samples[0] = b->start_time.nsec;
 		b->running = 1;
 	}
 
@@ -101,7 +98,80 @@ b_stop_timer(struct B * b) {
 }
 
 int
-b_exec_bench(struct BenchmarkResult * result, int count, const char * key, b_bench_method bench_method) {
+b_stop_timer(struct B * b) {
+	uint64_t start, end, duration;
+	if(b->running) {
+		printf("stopping");
+		get_timespec(&b->end_time);
+		if (b->end_time.nsec - b->start_time.nsec < 0) {
+			printf("Invalid nsec\n");
+		}
+		start = b->start_time.sec;
+		end = b->end_time.sec;
+		duration = end - start;
+		b->s_duration = duration;
+
+		start = b->start_time.nsec;
+		end = b->end_time.nsec;
+		duration = end - start;
+		b->ns_duration = duration;
+
+		b->running = 0;
+	}
+
+	return B_SUCCESS;
+}
+
+double
+get_median(uint64_t data[], int size) {
+	int i = 0;
+	int j = 0;
+	uint64_t temp = 0;
+	uint64_t * sorted;
+	sorted = malloc(sizeof(uint64_t) * (size + 1));
+	for (i = 1; i < size+1; i++) {
+		sorted[i] = data[i] - data[i-1];
+	}
+	for (i = size - 1; i > 0; --i) {
+		for(j = 0; j < i; ++j) {
+			if(sorted[j] > sorted[j+1]) {
+				temp = sorted[j];
+				sorted[j] = sorted[j+1];
+				sorted[j+1] = temp;
+			}
+		}
+	}
+	if((size & 1) == 0) {
+		return (double)(sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
+	} else {
+		return (double)sorted[(size / 2) + 1];
+	}
+}
+
+double
+get_mean(uint64_t data[], int size) {
+	int i = 0;
+	uint64_t sum;
+	sum = 0;
+	for(i = 1; i < size+1; i++) {
+		sum += data[i] - data[i-1];
+	}
+	return (double)(sum / size);
+}
+
+int
+update_stats(struct B * b, struct BenchmarkResult * result) {
+	result->ns_mean = get_mean(&b->samples[0], b->n);
+	result->ns_median = get_median(&b->samples[0], b->n);
+
+	result->s_mean = 0;
+	result->s_median = 0;
+
+	return B_SUCCESS;
+}
+
+int
+b_exec_bench(struct BenchmarkResult * result, int count, key_t key, b_bench_method bench_method) {
 	struct B b;
 	double ms;
 	double s;
@@ -111,13 +181,15 @@ b_exec_bench(struct BenchmarkResult * result, int count, const char * key, b_ben
 
 	b.key = key;
 	b.n = count;
-	b.running = 1;
+	b.running = 0;
+	b.samples = calloc(sizeof(uint64_t), count + 2);
+	b.start_time.sec = 0;
+	b.start_time.nsec = 0;
+	b.end_time.sec = 0;
+	b.end_time.nsec = 0;
 	b.bench_method = bench_method;
 
-	b_reset_timer(&b);
-	b_start_timer(&b);
 	b.bench_method(&b);
-	b_stop_timer(&b);
 
 	ms = (double)(b.ns_duration / MILLIS);
 	s = (double)(b.ns_duration / NANOS);
@@ -127,27 +199,37 @@ b_exec_bench(struct BenchmarkResult * result, int count, const char * key, b_ben
 	result->ns_per_op = (double)(b.ns_duration / count);
 	result->ms_per_op = ms / count;
 	result->s_per_op = s / count;
-	result->ops_per_s = (double)(count / b.ns_duration);
 	result->ops_per_ms = (double)(count / ms);
 	result->ops_per_s = (double)(count / s);
 	result->s_duration = b.s_duration;
-	result->s_mean = 0;
-	result->s_median = 0;
-	result->s_avg = 0;
 	result->ns_duration = b.ns_duration;
-	result->ns_mean = 0;
-	result->ns_median = 0;
-	result->ns_avg = 0;
+
+	update_stats(&b, result);
+
+	free(b.samples);
 
 	return B_SUCCESS;
 }
 
 int
 b_print_result(struct BenchmarkResult * result) {
-	printf("\n%12s\t[%10d]\t[ %8.4f ns/op ]", result->key, result->count, result->ns_per_op);
-	printf("\t\t%12.8f op/ms\t\t%12.4f op/s\n\n",
-		result->ops_per_ms,
+	setlocale(LC_NUMERIC, "");
+	printf("\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n",
+		(char*)result->key,
+		result->count,
+		result->ns_per_op,
 		result->ops_per_s);
+	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n",
+		"MEAN:",
+		result->ns_mean,
+		(double)(NANOS / result->ns_mean));
+	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n",
+		"MEDIAN:",
+		result->ns_median,
+		(double)(NANOS / result->ns_median)
+		);
 
 	return B_SUCCESS;
 }
+
+
