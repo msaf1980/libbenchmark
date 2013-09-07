@@ -88,7 +88,6 @@ b_sample(struct B * b, int index) {
 int
 b_start_timer(struct B * b) {
 	if(!b->running) {
-		printf("starting");
 		get_timespec(&b->start_time);
 		b->samples[0] = b->start_time.nsec;
 		b->running = 1;
@@ -101,7 +100,6 @@ int
 b_stop_timer(struct B * b) {
 	uint64_t start, end, duration;
 	if(b->running) {
-		printf("stopping");
 		get_timespec(&b->end_time);
 		if (b->end_time.nsec - b->start_time.nsec < 0) {
 			printf("Invalid nsec\n");
