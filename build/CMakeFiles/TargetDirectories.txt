@@ -1,4 +1,0 @@
-/c/vizidrix/src/github.com/vizidrix/libbenchmark/build/src/CMakeFiles/benchmark.dir
-/c/vizidrix/src/github.com/vizidrix/libbenchmark/build/example/CMakeFiles/example_c.dir
-/c/vizidrix/src/github.com/vizidrix/libbenchmark/build/test/CMakeFiles/libbenchmark_test.dir
-/c/vizidrix/src/github.com/vizidrix/libbenchmark/build/CMakeFiles/uninstall.dir

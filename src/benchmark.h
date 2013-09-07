@@ -37,10 +37,12 @@ typedef void (*b_bench_method)(struct B * b);
 #define B_ERROR				(-50000)
 
 #define BENCH(count, name, method)															\
-	struct BenchmarkResult bm_result;														\
-	if(b_exec_bench(&bm_result, count, (benchname_t)name, method) == B_SUCCESS) { 			\
-		b_print_result(&bm_result);															\
-	}																						
+	do {																					\
+		struct BenchmarkResult bm_result;														\
+		if(b_exec_bench(&bm_result, count, (benchname_t)name, method) == B_SUCCESS) { 			\
+			b_print_result(&bm_result);															\
+		}																						\
+	}while(0);
 
 benchname_t b_key(struct B * b);
 int b_count(struct B * b);

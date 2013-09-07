@@ -1,3 +1,5 @@
+#include <test/given_a_sample_benchmark_method.hpp>
+
 #include "gtest/gtest.h"
 
 
