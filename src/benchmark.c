@@ -26,7 +26,7 @@ typedef struct nano_clock {
 } nano_clock;
 
 struct B {
-	key_t						key;
+	benchname_t						key;
 	int							n;
 	int 						running;
 	void						* clock_token;
@@ -38,7 +38,7 @@ struct B {
 	b_bench_method		 		bench_method;
 };
 
-key_t
+benchname_t
 b_get_key(struct B * b) {
 	return b->key;
 }
@@ -171,7 +171,7 @@ update_stats(struct B * b, struct BenchmarkResult * result) {
 }
 
 int
-b_exec_bench(struct BenchmarkResult * result, int count, key_t key, b_bench_method bench_method) {
+b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method) {
 	struct B b;
 	double ms;
 	double s;
@@ -211,6 +211,7 @@ b_exec_bench(struct BenchmarkResult * result, int count, key_t key, b_bench_meth
 	return B_SUCCESS;
 }
 
+#ifdef __MACH__
 int
 b_print_result(struct BenchmarkResult * result) {
 	setlocale(LC_NUMERIC, "");
@@ -231,5 +232,27 @@ b_print_result(struct BenchmarkResult * result) {
 
 	return B_SUCCESS;
 }
+#else
+int
+b_print_result(struct BenchmarkResult * result) {
+	setlocale(LC_NUMERIC, "");
+	printf("\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n",
+		(char*)result->key,
+		result->count,
+		result->ns_per_op,
+		result->ops_per_s);
+	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n",
+		"MEAN:",
+		result->ns_mean,
+		(double)(NANOS / result->ns_mean));
+	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n",
+		"MEDIAN:",
+		result->ns_median,
+		(double)(NANOS / result->ns_median)
+		);
+
+	return B_SUCCESS;
+}
+#endif
 
 

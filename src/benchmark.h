@@ -9,12 +9,12 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 
-typedef char (* key_t)[20];
+typedef char (* benchname_t)[20];
 
 typedef struct B B;
 
 typedef struct BenchmarkResult {
-	key_t			key;
+	benchname_t		key;
 	int 			count;
 	double			ns_per_op;
 	double			ms_per_op;
@@ -36,13 +36,13 @@ typedef void (*b_bench_method)(struct B * b);
 #define B_SUCCESS			0
 #define B_ERROR				(-50000)
 
-key_t b_key(struct B * b);
+benchname_t b_key(struct B * b);
 int b_count(struct B * b);
 
 void b_sample(struct B * b, int index);
 int b_start_timer(struct B * b);
 int b_stop_timer(struct B * b);
-int b_exec_bench(struct BenchmarkResult * result, int count, key_t key, b_bench_method bench_method);
+int b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method);
 int b_print_result(struct BenchmarkResult * result);
 
 #ifdef __cplusplus

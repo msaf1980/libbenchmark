@@ -27,7 +27,7 @@ benchmark_example() {
 	int result;
 	struct BenchmarkResult bm_result;
 
-	result = b_exec_bench(&bm_result, 10000, (key_t)"bench tests", &benchmark_method);
+	result = b_exec_bench(&bm_result, 10000, (benchname_t)"bench tests", &benchmark_method);
 	if(result != B_SUCCESS) { return; }
 	result = b_print_result(&bm_result);
 	if(result != B_SUCCESS) { return; }
