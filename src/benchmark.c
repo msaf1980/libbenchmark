@@ -26,7 +26,7 @@ typedef struct nano_clock {
 } nano_clock;
 
 struct B {
-	benchname_t						key;
+	benchname_t					key;
 	int							n;
 	int 						running;
 	void						* clock_token;
@@ -128,6 +128,7 @@ get_median(uint64_t data[], int size) {
 	int j = 0;
 	uint64_t temp = 0;
 	uint64_t * sorted;
+	double result;
 	sorted = malloc(sizeof(uint64_t) * (size + 1));
 	for (i = 1; i < size+1; i++) {
 		sorted[i] = data[i] - data[i-1];
@@ -142,10 +143,12 @@ get_median(uint64_t data[], int size) {
 		}
 	}
 	if((size & 1) == 0) {
-		return (double)(sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
+		result = (double)(sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
 	} else {
-		return (double)sorted[(size / 2) + 1];
+		result = (double)sorted[(size / 2) + 1];
 	}
+	free(sorted);
+	return result;
 }
 
 double
