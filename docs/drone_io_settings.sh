@@ -26,7 +26,7 @@ echo "Running tests..."
 
 echo "Installing Valgrind..."
 
-sudo apt-get install valgrind
+sudo apt-get -q --yes install valgrind
 
 echo "Valgrind - libbenchmark tests"
 
