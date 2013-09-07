@@ -29,13 +29,7 @@ benchmark_method(B * b) {
 
 void
 benchmark_example() {
-	int result;
-	struct BenchmarkResult bm_result;
-
-	result = b_exec_bench(&bm_result, 10000, (benchname_t)"bench tests", &benchmark_method);
-	if(result != B_SUCCESS) { return; }
-	result = b_print_result(&bm_result);
-	if(result != B_SUCCESS) { return; }
+	BENCH(10000, "bench tests", &benchmark_method);
 }
 
 int
