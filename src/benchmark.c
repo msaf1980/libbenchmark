@@ -212,40 +212,32 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 }
 
 #ifdef __MACH__
-int
-b_print_result(struct BenchmarkResult * result) {
-	setlocale(LC_NUMERIC, "");
-	printf("\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n",
-		(char*)result->key,
-		result->count,
-		result->ns_per_op,
-		result->ops_per_s);
-	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n",
-		"MEAN:",
-		result->ns_mean,
-		(double)(NANOS / result->ns_mean));
-	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n",
-		"MEDIAN:",
-		result->ns_median,
-		(double)(NANOS / result->ns_median)
-		);
 
-	return B_SUCCESS;
-}
+const char	* default_fmt = "\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n";
+const char 	* stats_fmt = "\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n";
+
 #else
+
+const char	* default_fmt = "\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n";
+const char	* stats_fmt = "\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n";
+
+#endif
+
 int
 b_print_result(struct BenchmarkResult * result) {
 	setlocale(LC_NUMERIC, "");
-	printf("\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n",
+	printf(default_fmt,
 		(char*)result->key,
 		result->count,
 		result->ns_per_op,
 		result->ops_per_s);
-	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n",
+	if(result->ns_median == 0) { return B_SUCCESS; }
+
+	printf(stats_fmt,
 		"MEAN:",
 		result->ns_mean,
 		(double)(NANOS / result->ns_mean));
-	printf("\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n",
+	printf(stats_fmt,
 		"MEDIAN:",
 		result->ns_median,
 		(double)(NANOS / result->ns_median)
@@ -253,6 +245,5 @@ b_print_result(struct BenchmarkResult * result) {
 
 	return B_SUCCESS;
 }
-#endif
 
 

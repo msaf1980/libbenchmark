@@ -5,20 +5,25 @@
 void
 benchmark_method(B * b) {
 	int i;
-	
+	int j;
+
 	/* Do setup here */
 	
-	/* Increment and optionally sample */
+	/* Start the clock at the last possible second!  */
 	b_start_timer(b);
+
+	/* Increment without sample */
 	/*for(i = 0; i < b_count(b); i++) {*/
+	/* Increment and sample */
 	for(i = 0; i < b_count(b); b_sample(b, ++i)) {
 		/* Do some work here */
-		usleep(1);
-		usleep(1);
-		usleep(1);
+		for(j = 0; j < 1000; j++) {
+		}
 
 	}
+	/* Stop the clock at the earliest convience */
 	b_stop_timer(b);
+
 	/* Do cleanup here */
 }
 
