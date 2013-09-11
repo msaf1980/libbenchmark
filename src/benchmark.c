@@ -50,7 +50,7 @@ b_count(struct B * b) {
 
 #ifdef __MACH__
 
-inline uint64_t
+uint64_t
 get_nanos() {
 	return mach_absolute_time();
 }
@@ -63,7 +63,7 @@ get_timespec(nano_clock * nc) {
 
 #else
 
-inline uint64_t
+uint64_t
 get_nanos() {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);

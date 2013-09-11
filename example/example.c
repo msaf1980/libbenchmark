@@ -1,4 +1,4 @@
-#include <src/benchmark.h>
+#include "benchmark.h"
 
 #include <unistd.h>
 
@@ -38,3 +38,4 @@ main() {
 
 	return 0;
 }
+

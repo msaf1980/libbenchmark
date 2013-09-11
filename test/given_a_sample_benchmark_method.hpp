@@ -1,5 +1,5 @@
 #pragma once
-#include <src/benchmark.h>
+#include <benchmark.h>
 
 #include <gtest/gtest.h>
 

@@ -9,6 +9,20 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 
+/* Define the success/error codes */
+#define B_SUCCESS			0
+#define B_ERROR				(-50000)
+
+/* Define macros */
+#define BENCH(count, name, method)																\
+	do {																						\
+		struct BenchmarkResult bm_result;														\
+		if(b_exec_bench(&bm_result, count, (benchname_t)name, method) == B_SUCCESS) { 			\
+			b_print_result(&bm_result);															\
+		}																						\
+	}while(0);
+
+/* Define the bench struct */
 typedef char (* benchname_t)[20];
 
 typedef struct B B;
@@ -31,18 +45,8 @@ typedef struct BenchmarkResult {
 	double			ns_median;
 } BenchmarkResult;
 
+/* Define the public methods */
 typedef void (*b_bench_method)(struct B * b);
-
-#define B_SUCCESS			0
-#define B_ERROR				(-50000)
-
-#define BENCH(count, name, method)															\
-	do {																					\
-		struct BenchmarkResult bm_result;														\
-		if(b_exec_bench(&bm_result, count, (benchname_t)name, method) == B_SUCCESS) { 			\
-			b_print_result(&bm_result);															\
-		}																						\
-	}while(0);
 
 benchname_t b_key(struct B * b);
 int b_count(struct B * b);

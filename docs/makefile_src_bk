@@ -1,0 +1,12 @@
+# src makefile
+
+CC			:=	gcc
+CC_FLAGS	:=	-O2
+
+MODULES		:=	benchmark.o
+
+libbenchmark.so: $(MODULES)
+	$(CC) -shared $< -o $@
+
+%.o: %.c
+	$(CC) $(CC_FLAGS) -fpic -c $< -o $@
