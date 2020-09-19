@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-void
+int
 benchmark_method(B * b) {
 	int i;
 	int j;
@@ -25,6 +25,8 @@ benchmark_method(B * b) {
 	b_stop_timer(b);
 
 	/* Do cleanup here */
+
+	return BENCH_SUCCESS;
 }
 
 void
@@ -36,6 +38,6 @@ int
 main() {
 	benchmark_example();
 
-	return 0;
+	return BENCH_STATUS;
 }
 

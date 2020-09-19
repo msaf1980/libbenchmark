@@ -25,6 +25,9 @@ typedef struct nano_clock {
 	int64_t	nsec;
 } nano_clock;
 
+
+int BENCH_STATUS = 0;
+
 struct B {
 	benchname_t					key;
 	int							n;
@@ -67,7 +70,7 @@ uint64_t
 get_nanos() {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return ts.tv_nsec;
+	return ts.tv_sec * NANOS + ts.tv_nsec;
 }
 
 void
@@ -93,7 +96,7 @@ b_start_timer(struct B * b) {
 		b->running = 1;
 	}
 
-	return B_SUCCESS;
+	return BENCH_SUCCESS;
 }
 
 int
@@ -117,7 +120,7 @@ b_stop_timer(struct B * b) {
 		b->running = 0;
 	}
 
-	return B_SUCCESS;
+	return BENCH_SUCCESS;
 }
 
 double
@@ -149,26 +152,13 @@ get_median(uint64_t data[], int size) {
 	return result;
 }
 
-double
-get_mean(uint64_t data[], int size) {
-	int i = 0;
-	uint64_t sum;
-	sum = 0;
-	for(i = 1; i < size+1; i++) {
-		sum += data[i] - data[i-1];
-	}
-	return (double)(sum / size);
-}
-
 int
 update_stats(struct B * b, struct BenchmarkResult * result) {
-	result->ns_mean = get_mean(&b->samples[0], b->n);
 	result->ns_median = get_median(&b->samples[0], b->n);
 
-	result->s_mean = 0;
 	result->s_median = 0;
 
-	return B_SUCCESS;
+	return BENCH_SUCCESS;
 }
 
 int
@@ -176,6 +166,7 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 	struct B b;
 	double ms;
 	double s;
+	int ret = BENCH_SUCCESS;
 
 	result->count = count;
 	result->key = key;
@@ -190,7 +181,10 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 	b.end_time.nsec = 0;
 	b.bench_method = bench_method;
 
-	b.bench_method(&b);
+	if (b.bench_method(&b) != BENCH_SUCCESS) {
+		ret = BENCH_ERROR;
+		BENCH_STATUS++;
+	}
 
 	ms = (double)(b.ns_duration / MILLIS);
 	s = (double)(b.ns_duration / NANOS);
@@ -209,7 +203,7 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 
 	free(b.samples);
 
-	return B_SUCCESS;
+	return ret;
 }
 
 #ifdef __MACH__
@@ -219,32 +213,37 @@ const char 	* stats_fmt = "\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n";
 
 #else
 
-const char	* default_fmt = "\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n";
-const char	* stats_fmt = "\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %8.2f op/s ]\n";
+const char	* default_fmt = "\n%24s\t[%10d]\t[ %14.2f ns/op ]\t[ %14.2f op/s ] %3s\n";
+const char	* stats_fmt = "\t\t\t\t%10s\t[ %14.2f ns/op ]\t[ %14.2f op/s ]\n";
 
 #endif
 
+const char	* table_header_fmt = "\n%24s\t%3s\t%10s\t%14s\t%14s\t%14s\t%14s\n";
+const char	* table_stats_fmt = "%24s\t%3s\t%10d\t%14.2f\t%14.2f\t%14.2f\t%14.2f\n";
+
+static char first = 0;
+
 int
-b_print_result(struct BenchmarkResult * result) {
+b_print_result(struct BenchmarkResult * result, int status) {
 	setlocale(LC_NUMERIC, "");
-	printf(default_fmt,
-		(char*)result->key,
-		result->count,
-		result->ns_per_op,
-		result->ops_per_s);
-	if(result->ns_median == 0) { return B_SUCCESS; }
-
-	printf(stats_fmt,
-		"MEAN:",
-		result->ns_mean,
-		(double)(NANOS / result->ns_mean));
-	printf(stats_fmt,
-		"MEDIAN:",
-		result->ns_median,
-		(double)(NANOS / result->ns_median)
+	if (first == 0) {
+		first = 1;
+		printf(table_header_fmt,
+			"test",
+			"status",
+			"count",
+			"last ns/op", "last op/s",
+			"median ns/op", "median op/s"
 		);
+	}
 
-	return B_SUCCESS;
+	printf(table_stats_fmt,
+		(char*)result->key,
+		(status == BENCH_SUCCESS) ? "OK" : "ERR",
+		result->count,
+		result->ns_per_op, result->ops_per_s,
+		result->ns_median, NANOS / result->ns_median
+	);
+
+	return BENCH_SUCCESS;
 }
-
-
