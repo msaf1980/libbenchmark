@@ -9,7 +9,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${LIBBENCHMARK_BUILD_ROOT}/lib" )
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIBBENCHMARK_BUILD_ROOT}/lib" )
 set(EXECUTABLE_OUTPUT_PATH         "${LIBBENCHMARK_BUILD_ROOT}/bin" )
 
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -pedantic-errors -Wall -pedantic -Wextra")
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Werror  -pedantic-errors -Wall -pedantic -Wextra")
 
 include_directories(${LIBBENCHMARK_SRC_ROOT})
 add_subdirectory(src)

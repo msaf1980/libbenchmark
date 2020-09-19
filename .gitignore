@@ -17,4 +17,3 @@
 *.app
 
 build/
-build/bin/libbenchmark_test
