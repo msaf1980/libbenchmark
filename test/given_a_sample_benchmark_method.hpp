@@ -15,17 +15,17 @@ protected:
 
 TEST_F(Given_a_sample_benchmark_success, _when_BENCH_is_called) {
 	int ret = BENCH_STATUS;
-	BENCH(100, "sample success", &sample_success, NULL)
+	BENCH(100, "sample success", &sample_success, NULL, NULL)
 	EXPECT_EQ(100, last_count) << "then it should have called the sample success";
 	EXPECT_EQ(ret, BENCH_STATUS) << "then it should have called the sample success";
 }
 
 TEST_F(Given_a_sample_benchmark_success, _when_BENCH_is_called_twice) {
 	int pre = BENCH_STATUS;
-	BENCH(200, "sample success", &sample_success, NULL)
+	BENCH(200, "sample success", &sample_success, NULL, NULL)
 	EXPECT_EQ(200, last_count) << "then it should have called the sample success";
 	EXPECT_EQ(BENCH_STATUS, pre) << "then it should have called the sample success";
-	BENCH(300, "sample success", &sample_success, NULL)
+	BENCH(300, "sample success", &sample_success, NULL, NULL)
 	EXPECT_EQ(300, last_count) << "then it should have called the sample success";
 	EXPECT_EQ(BENCH_STATUS, pre) << "then it should have called the sample success";
 }
@@ -41,7 +41,7 @@ protected:
 
 TEST_F(Given_a_sample_benchmark_error, _when_BENCH_is_called) {
 	int pre = BENCH_STATUS;
-	BENCH(100, "sample error", &sample_error, NULL)
+	BENCH(100, "sample error", &sample_error, NULL, NULL)
 	EXPECT_EQ(100, last_count) << "then it should have called the sample error";
 	EXPECT_EQ(BENCH_STATUS, pre + 1) << "then it should have called the sample error";
 }

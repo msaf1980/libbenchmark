@@ -22,16 +22,16 @@ extern "C" {
 extern int BENCH_STATUS;
 
 /* Define macros */
-#define BENCH(_count, name, method, data)															\
+#define BENCH(_count, name, method, print_custom, data)															\
 	do {																							\
 		struct BenchmarkResult bm_result;															\
 		if (b_exec_bench(&bm_result, _count, (benchname_t)name, method, data) == BENCH_SUCCESS) {   \
-			b_print_result(&bm_result, 1);										   					\
+			b_print_result(&bm_result, 1, print_custom, data);										   					\
 		}                                                                         					\
 	}while(0);
 
 // For minimize jitter
-#define BENCH_S(_samples, _count, name, method, data)							     				\
+#define BENCH_S(_samples, _count, name, method, print_custom, data)							     				\
 	do {																							\
 		int i, n;																					\
 		struct BenchmarkResult bm_result;   														\
@@ -44,7 +44,7 @@ extern int BENCH_STATUS;
 		}                                                                                         	\
 		n = b_samples_aggregate(&bm_result, bm_results, _samples);                                	\
 		free(bm_results);                                                                         	\
-		b_print_result(&bm_result, n);										   			           	\
+		b_print_result(&bm_result, n, print_custom, data);										   			           	\
 	}while(0);
 
 /* Define the bench struct */
@@ -68,6 +68,8 @@ typedef struct BenchmarkResult {
 /* Define the public methods */
 typedef int (*b_bench_method)(struct B * b, void *data);
 
+typedef void (*b_print_custom_results)(void *data);
+
 benchname_t b_key(struct B * b);
 int b_count(struct B * b);
 
@@ -75,7 +77,7 @@ void b_sample(struct B * b, int *index);
 int b_start_timer(struct B * b);
 int b_stop_timer(struct B * b);
 int b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method, void *data);
-int b_print_result(struct BenchmarkResult * result, int samples);
+int b_print_result(struct BenchmarkResult * result, int samples, b_print_custom_results print_custom, void *data);
 
 int b_samples_aggregate(struct BenchmarkResult * result, struct BenchmarkResult * s, int64_t samples);
 

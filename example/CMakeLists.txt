@@ -1,4 +1,5 @@
 set(TITLE example)
+set(TITLE_THREAD example_thread)
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") # Mac OS X
 
@@ -18,3 +19,7 @@ set( SOURCES example.c )
 
 add_executable(${TITLE} ${SOURCES})
 target_link_libraries(${TITLE} benchmark)
+
+set( SOURCES_THREAD example_thread.c )
+add_executable(${TITLE_THREAD} ${SOURCES_THREAD})
+target_link_libraries(${TITLE_THREAD} benchmark)

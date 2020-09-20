@@ -1,6 +1,7 @@
 #include <benchmark.h>
 
 #include <unistd.h>
+#include <stdio.h>
 
 int
 benchmark_sample_method(B * b, void *data) {
@@ -54,22 +55,37 @@ benchmark_method(B * b, void *data) {
 
 void
 benchmark_example() {
-	BENCH(10000, "bench tests", &benchmark_sample_method, NULL);
+	BENCH(10000, "bench tests", &benchmark_sample_method, NULL, NULL);
 	// For minimize jitter 1000 samples with 10 count
-	BENCH_S(1000, 10, "bench samples tests", &benchmark_sample_method, NULL);
+	BENCH_S(1000, 10, "bench samples tests", &benchmark_sample_method, NULL, NULL);
 }
 
 void
 benchmark_sampling_example() {
-	BENCH(10000, "sampling bench tests", &benchmark_method, NULL);
+	BENCH(10000, "sampling bench tests", &benchmark_method, NULL, NULL);
 	// For minimize jitter 1000 samples with 10 count, no sampling for minimal impact
-	BENCH_S(1000, 10, "sampling bench samples tests", &benchmark_method, NULL);
+	BENCH_S(1000, 10, "sampling bench samples tests", &benchmark_method, NULL, NULL);
+}
+
+
+void
+custom_print(void *data) {
+    const char *msg = (const char *) data;
+    printf("\t	%s\t%s\t%s", msg, "test1=value1", "test2=value2");
+}
+
+void
+benchmark_custom_print() {
+	// Example for print custom metrics
+	const char *msg = "custom";
+	BENCH(10000, "bench custom print", &benchmark_sample_method, custom_print, (void *) msg);
 }
 
 int
 main() {
 	benchmark_example();
 	benchmark_sampling_example();
+	benchmark_custom_print();
 
 	return BENCH_STATUS;
 }

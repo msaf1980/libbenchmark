@@ -266,14 +266,14 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 const char	* table_header_fmt = "\n%24s\t%6s\t%10s\t%14s\t%14s\t%14s\t%14s\t%14s\t%14s\n";
 const char	* table_stats_fmt = "%24s\t%6d\t%10d\t%14.2f\t%14.2f";
 
-const char	* table_nomedian_fmt = "\t%14s\t%14s\t%14s\t%14s\n";
-const char	* table_median_fmt = "\t%14.2f\t%14.2f\t%14.2f\t%14.2f\n";
+const char	* table_nomedian_fmt = "\t%14s\t%14s\t%14s\t%14s";
+const char	* table_median_fmt = "\t%14.2f\t%14.2f\t%14.2f\t%14.2f";
 
 
 static char first = 0;
 
 int
-b_print_result(struct BenchmarkResult * result, int samples) {
+b_print_result(struct BenchmarkResult * result, int samples, b_print_custom_results print_custom, void *data) {
 	if (samples < 1) {
 		return BENCH_ERROR;
 	}
@@ -290,7 +290,6 @@ b_print_result(struct BenchmarkResult * result, int samples) {
 		);
 	}
 
-
 	printf(table_stats_fmt,
 		(char*)result->key,
 		samples,
@@ -302,6 +301,10 @@ b_print_result(struct BenchmarkResult * result, int samples) {
 	} else {
 		printf(table_median_fmt, result->ns_min, result->ns_max, result->ns_median, NANOS / result->ns_median);
 	}
+	if (print_custom != NULL) {
+		print_custom(data);
+	}
+	printf("\n");
 
 	return BENCH_SUCCESS;
 }
