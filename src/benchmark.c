@@ -206,44 +206,39 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 	return ret;
 }
 
-#ifdef __MACH__
+const char	* table_header_fmt = "\n%24s\t%10s\t%14s\t%14s\t%14s\t%14s\n";
+const char	* table_stats_fmt = "%24s\t%10d\t%14.2f\t%14.2f";
 
-const char	* default_fmt = "\n%24s\t[%10d]\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n";
-const char 	* stats_fmt = "\t\t\t\t%10s\t[ %8.2f ns/op ]\t[ %'.2f op/s ]\n";
+const char	* table_nomedian_fmt = "\t%14s\t%14s\n";
+const char	* table_median_fmt = "\t%14.2f\t%14.2f\n";
 
-#else
-
-const char	* default_fmt = "\n%24s\t[%10d]\t[ %14.2f ns/op ]\t[ %14.2f op/s ] %3s\n";
-const char	* stats_fmt = "\t\t\t\t%10s\t[ %14.2f ns/op ]\t[ %14.2f op/s ]\n";
-
-#endif
-
-const char	* table_header_fmt = "\n%24s\t%3s\t%10s\t%14s\t%14s\t%14s\t%14s\n";
-const char	* table_stats_fmt = "%24s\t%3s\t%10d\t%14.2f\t%14.2f\t%14.2f\t%14.2f\n";
 
 static char first = 0;
 
 int
-b_print_result(struct BenchmarkResult * result, int status) {
+b_print_result(struct BenchmarkResult * result) {
 	setlocale(LC_NUMERIC, "");
 	if (first == 0) {
 		first = 1;
 		printf(table_header_fmt,
 			"test",
-			"status",
 			"count",
 			"last ns/op", "last op/s",
 			"median ns/op", "median op/s"
 		);
 	}
 
+
 	printf(table_stats_fmt,
 		(char*)result->key,
-		(status == BENCH_SUCCESS) ? "OK" : "ERR",
 		result->count,
-		result->ns_per_op, result->ops_per_s,
-		result->ns_median, NANOS / result->ns_median
+		result->ns_per_op, result->ops_per_s
 	);
+	if(result->ns_median == 0) {
+		printf(table_nomedian_fmt, "-", "-");
+	} else {
+		printf(table_median_fmt, result->ns_median, NANOS / result->ns_median);
+	}
 
 	return BENCH_SUCCESS;
 }

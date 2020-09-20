@@ -19,7 +19,6 @@ benchmark_method(B * b) {
 		/* Do some work here */
 		for(j = 0; j < 1000; j++) {
 		}
-
 	}
 	/* Stop the clock at the earliest convience */
 	b_stop_timer(b);

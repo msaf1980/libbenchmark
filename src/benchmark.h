@@ -20,8 +20,9 @@ extern int BENCH_STATUS;
 #define BENCH(count, name, method)																\
 	do {																						\
 		struct BenchmarkResult bm_result;														\
-		int ret = b_exec_bench(&bm_result, count, (benchname_t)name, method);                	\
-		b_print_result(&bm_result, ret);										     			\
+		if (b_exec_bench(&bm_result, count, (benchname_t)name, method) == BENCH_SUCCESS) {     	\
+			b_print_result(&bm_result);										   			\
+		}                                                                                       \
 	}while(0);
 
 /* Define the bench struct */
@@ -56,8 +57,7 @@ void b_sample(struct B * b, int index);
 int b_start_timer(struct B * b);
 int b_stop_timer(struct B * b);
 int b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method);
-int b_print_result(struct BenchmarkResult * result, int status);
-int b_print_result_table(struct BenchmarkResult * result, int status);
+int b_print_result(struct BenchmarkResult * result);
 
 #ifdef __cplusplus
 }
