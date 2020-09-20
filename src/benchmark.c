@@ -35,9 +35,8 @@ struct B {
 	void						* clock_token;
 	struct nano_clock 			start_time;
 	struct nano_clock			end_time;
-	uint64_t					* samples;
-	uint64_t					s_duration;
-	uint64_t					ns_duration;
+	int64_t				        * samples;
+	int64_t					    ns_duration;
 	b_bench_method		 		bench_method;
 };
 
@@ -101,20 +100,13 @@ b_start_timer(struct B * b) {
 
 int
 b_stop_timer(struct B * b) {
-	uint64_t start, end, duration;
+	int64_t duration;
 	if(b->running) {
 		get_timespec(&b->end_time);
-		if (b->end_time.nsec - b->start_time.nsec < 0) {
+		duration = (b->end_time.sec - b->start_time.sec) * NANOS + (b->end_time.nsec - b->start_time.nsec);
+		if (duration < 0) {
 			printf("Invalid nsec\n");
 		}
-		start = b->start_time.sec;
-		end = b->end_time.sec;
-		duration = end - start;
-		b->s_duration = duration;
-
-		start = b->start_time.nsec;
-		end = b->end_time.nsec;
-		duration = end - start;
 		b->ns_duration = duration;
 
 		b->running = 0;
@@ -124,13 +116,13 @@ b_stop_timer(struct B * b) {
 }
 
 double
-get_median(uint64_t data[], int size) {
+get_median(int64_t data[], int size) {
 	int i = 0;
 	int j = 0;
-	uint64_t temp = 0;
-	uint64_t * sorted;
+	int64_t temp = 0;
+	int64_t * sorted;
 	double result;
-	sorted = malloc(sizeof(uint64_t) * (size + 1));
+	sorted = malloc(sizeof(int64_t) * (size + 1));
 	for (i = 1; i < size+1; i++) {
 		sorted[i] = data[i] - data[i-1];
 	}
@@ -156,15 +148,12 @@ int
 update_stats(struct B * b, struct BenchmarkResult * result) {
 	result->ns_median = get_median(&b->samples[0], b->n);
 
-	result->s_median = 0;
-
 	return BENCH_SUCCESS;
 }
 
 int
 b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method) {
 	struct B b;
-	double ms;
 	double s;
 	int ret = BENCH_SUCCESS;
 
@@ -186,17 +175,12 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 		BENCH_STATUS++;
 	}
 
-	ms = (double)(b.ns_duration / MILLIS);
 	s = (double)(b.ns_duration / NANOS);
 
 	result->key = key;
 	result->count = count;
 	result->ns_per_op = (double)(b.ns_duration / count);
-	result->ms_per_op = ms / count;
-	result->s_per_op = s / count;
-	result->ops_per_ms = (double)(count / ms);
 	result->ops_per_s = (double)(count / s);
-	result->s_duration = b.s_duration;
 	result->ns_duration = b.ns_duration;
 
 	update_stats(&b, result);
@@ -223,7 +207,7 @@ b_print_result(struct BenchmarkResult * result) {
 		printf(table_header_fmt,
 			"test",
 			"count",
-			"last ns/op", "last op/s",
+			"ns/op", "op/s",
 			"median ns/op", "median op/s"
 		);
 	}

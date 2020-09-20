@@ -34,15 +34,9 @@ typedef struct BenchmarkResult {
 	benchname_t		key;
 	int 			count;
 	double			ns_per_op;
-	double			ms_per_op;
-	double			s_per_op;
-	double			ops_per_ns;
-	double			ops_per_ms;
 	double			ops_per_s;
-	uint64_t		s_duration;
-	uint64_t		ns_duration;
+	int64_t	    	ns_duration;
 	/* Statistics */
-	double			s_median;
 
 	double			ns_median;
 } BenchmarkResult;
