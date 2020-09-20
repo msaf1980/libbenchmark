@@ -5,7 +5,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <locale.h>
-
+#include <float.h>
 
 #ifdef __MACH__
 #include <mach/clock.h>
@@ -13,6 +13,10 @@
 #include <mach/mach_time.h>
 #else
 #include <unistd.h>
+#endif
+
+#ifdef BENCH_THREADS
+#include <pthread.h>
 #endif
 
 #include "benchmark.h"
@@ -30,7 +34,7 @@ int BENCH_STATUS = 0;
 
 struct B {
 	benchname_t					key;
-	int							n;
+	int64_t						n;
 	int 						running;
 	void						* clock_token;
 	struct nano_clock 			start_time;
@@ -83,15 +87,16 @@ get_timespec(nano_clock * nc) {
 #endif
 
 inline void
-b_sample(struct B * b, int index) {
-	b->samples[index] = get_nanos();
+b_sample(struct B * b, int *index) {
+	(*index)++;
+	b->samples[*index] = get_nanos();
 }
 
 int
 b_start_timer(struct B * b) {
 	if(!b->running) {
 		get_timespec(&b->start_time);
-		b->samples[0] = b->start_time.nsec;
+		b->samples[0] = b->start_time.sec * NANOS + b->start_time.nsec;
 		b->running = 1;
 	}
 
@@ -115,44 +120,112 @@ b_stop_timer(struct B * b) {
 	return BENCH_SUCCESS;
 }
 
-double
-get_median(int64_t data[], int size) {
-	int i = 0;
-	int j = 0;
-	int64_t temp = 0;
-	int64_t * sorted;
-	double result;
-	sorted = malloc(sizeof(int64_t) * (size + 1));
-	for (i = 1; i < size+1; i++) {
-		sorted[i] = data[i] - data[i-1];
-	}
-	for (i = size - 1; i > 0; --i) {
-		for(j = 0; j < i; ++j) {
-			if(sorted[j] > sorted[j+1]) {
-				temp = sorted[j];
-				sorted[j] = sorted[j+1];
-				sorted[j+1] = temp;
-			}
-		}
-	}
-	if((size & 1) == 0) {
-		result = (double)(sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
+typedef struct {
+	double median;
+	double min;
+	double max;	
+} stat;
+
+static int cmpint64p(const void *p1, const void *p2) {
+  	return ( *(int64_t*)p1 - *(int64_t*)p2 ); 
+}
+
+stat
+get_stat(int64_t data[], int size) {
+    int i = 0;
+    stat s;
+    int64_t *sorted = malloc(sizeof(int64_t) * size);
+    for (i = 0; i < size; i++) {
+        sorted[i] = data[i+1] - data[i];
+    }
+	qsort(sorted, size, sizeof(int64_t), cmpint64p);
+    if((size % 2) == 0) {
+		s.median = (double)(sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
 	} else {
-		result = (double)sorted[(size / 2) + 1];
+		s.median = (double)sorted[(size / 2) + 1];
+	}
+	if (s.median == 0) {
+		s.min = 0;
+		s.max = 0;
+	} else {
+		s.min = (double)sorted[0];
+		s.max = (double)sorted[size-1];
+	}
+	free(sorted);
+	return s;
+}
+
+int
+update_stats(struct B * b, struct BenchmarkResult * result) {
+	stat s = get_stat(b->samples, b->n);
+	result->ns_median = s.median;
+	result->ns_min = s.min;
+	result->ns_max = s.max;
+
+	return BENCH_SUCCESS;
+}
+
+static int
+cmpdoublep(const void *p1, const void *p2) {
+    double d = *((double *) p1) - *((double *) p2);
+    if (d > 0) {
+        return 1;
+    } else if (d < 0) {
+        return -1;
+    }
+    return 0;
+}
+
+stat
+get_double_stat(double data[], int size) {
+    int i = 0;
+    stat s;
+    double *sorted = malloc(sizeof(double) * size);
+    for (i = 0; i < size; i++) {
+        sorted[i] = data[i];
+    }
+	qsort(sorted, size, sizeof(double), cmpdoublep);
+    if((size % 2) == 0) {
+		s.median = (sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
+	} else {
+		s.median = sorted[(size / 2) + 1];
+	}
+	s.min = sorted[0];
+	s.max = sorted[size-1];
+	free(sorted);
+	return s;
+}
+
+double
+get_double_median(double data[], int size) {
+    int i = 0;
+	double result;
+    double *sorted = malloc(sizeof(double) * size);
+    for (i = 0; i < size; i++) {
+        sorted[i] = data[i];
+    }
+	qsort(sorted, size, sizeof(double), cmpdoublep);
+    if((size % 2) == 0) {
+		result = (sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
+	} else {
+		result = sorted[(size / 2) + 1];
 	}
 	free(sorted);
 	return result;
 }
 
-int
-update_stats(struct B * b, struct BenchmarkResult * result) {
-	result->ns_median = get_median(&b->samples[0], b->n);
-
-	return BENCH_SUCCESS;
+double
+get_double_mean(double data[], int size) {
+    int i = 0;
+	double result = 0;
+	for (i = 0; i < size; i++) {
+		result += data[i];
+	}
+	return result / size;
 }
 
 int
-b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method) {
+b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method, void *data) {
 	struct B b;
 	double s;
 	int ret = BENCH_SUCCESS;
@@ -163,14 +236,14 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 	b.key = key;
 	b.n = count;
 	b.running = 0;
-	b.samples = calloc(sizeof(uint64_t), count + 2);
+	b.samples = calloc(sizeof(int64_t), count + 2);
 	b.start_time.sec = 0;
 	b.start_time.nsec = 0;
 	b.end_time.sec = 0;
 	b.end_time.nsec = 0;
 	b.bench_method = bench_method;
 
-	if (b.bench_method(&b) != BENCH_SUCCESS) {
+	if (b.bench_method(&b, data) != BENCH_SUCCESS) {
 		ret = BENCH_ERROR;
 		BENCH_STATUS++;
 	}
@@ -190,24 +263,29 @@ b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_benc
 	return ret;
 }
 
-const char	* table_header_fmt = "\n%24s\t%10s\t%14s\t%14s\t%14s\t%14s\n";
-const char	* table_stats_fmt = "%24s\t%10d\t%14.2f\t%14.2f";
+const char	* table_header_fmt = "\n%24s\t%6s\t%10s\t%14s\t%14s\t%14s\t%14s\t%14s\t%14s\n";
+const char	* table_stats_fmt = "%24s\t%6d\t%10d\t%14.2f\t%14.2f";
 
-const char	* table_nomedian_fmt = "\t%14s\t%14s\n";
-const char	* table_median_fmt = "\t%14.2f\t%14.2f\n";
+const char	* table_nomedian_fmt = "\t%14s\t%14s\t%14s\t%14s\n";
+const char	* table_median_fmt = "\t%14.2f\t%14.2f\t%14.2f\t%14.2f\n";
 
 
 static char first = 0;
 
 int
-b_print_result(struct BenchmarkResult * result) {
+b_print_result(struct BenchmarkResult * result, int samples) {
+	if (samples < 1) {
+		return BENCH_ERROR;
+	}
 	setlocale(LC_NUMERIC, "");
 	if (first == 0) {
 		first = 1;
 		printf(table_header_fmt,
 			"test",
+			"samples",
 			"count",
 			"ns/op", "op/s",
+			"min ns/op", "max ns/op",			
 			"median ns/op", "median op/s"
 		);
 	}
@@ -215,14 +293,70 @@ b_print_result(struct BenchmarkResult * result) {
 
 	printf(table_stats_fmt,
 		(char*)result->key,
+		samples,
 		result->count,
 		result->ns_per_op, result->ops_per_s
 	);
 	if(result->ns_median == 0) {
-		printf(table_nomedian_fmt, "-", "-");
+		printf(table_nomedian_fmt, "-", "-", "-", "-");
 	} else {
-		printf(table_median_fmt, result->ns_median, NANOS / result->ns_median);
+		printf(table_median_fmt, result->ns_min, result->ns_max, result->ns_median, NANOS / result->ns_median);
 	}
 
 	return BENCH_SUCCESS;
+}
+
+int
+b_samples_aggregate(struct BenchmarkResult * result, struct BenchmarkResult * s, int64_t samples) {
+	int i;
+
+	int n = 0;
+	double *ns_median_d = malloc(sizeof(double) * samples);
+	double *ns_per_op_d = malloc(sizeof(double) * samples);
+	double *ops_per_s_d = malloc(sizeof(double) * samples);
+
+	result->count = 0;
+	result->key = s[0].key;
+	result->ns_duration = 0;
+	result->ns_median = 0;
+	result->ns_max = DBL_MIN;
+	result->ns_min = DBL_MAX;
+	result->ns_per_op = 0;
+	result->ops_per_s = 0;
+	
+	for (i  = 0; i < samples; i++) {
+		if (s[i].count > 0) {
+			result->count += s[i].count;
+			result->ns_duration += s[i].ns_duration;
+			ns_median_d[n] = s[i].ns_median;
+			if (result->ns_max < s[i].ns_max) {
+				result->ns_max = s[i].ns_max;
+			}
+			if (result->ns_min > s[i].ns_min) {
+				result->ns_min = s[i].ns_min;
+			}
+			ns_per_op_d[n] = s[i].ns_per_op;
+			ops_per_s_d[n] = s[i].ops_per_s;
+			n++;
+		}
+	}
+	if (n > 0) {
+		stat st;
+		result->ns_duration /= n;
+		result->ops_per_s = get_double_mean(ops_per_s_d, n);
+		result->ns_per_op = get_double_mean(ns_per_op_d, n);
+		st = get_double_stat(ns_per_op_d, n);		
+		if (st.median == 0) {
+			result->ns_min = 0;
+			result->ns_max = 0;
+		} else {
+			result->ns_median = st.median;
+			result->ns_min = st.min;
+			result->ns_max = st.max;
+		}
+	}
+	free(ns_median_d);
+	free(ns_per_op_d);
+	free(ops_per_s_d);
+	return n;
 }
