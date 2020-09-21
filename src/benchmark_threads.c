@@ -1,3 +1,4 @@
+/* run threaded benchmark with 2 bench thread */
 #include <stddef.h>
 #include <stdio.h>
 
@@ -100,24 +101,102 @@ int update_stats_thread(thread *ts, int threads,
     return BENCH_SUCCESS;
 }
 
-int b_exec_bench_thread(struct BenchmarkResult *result, int threads,
-                        b_start_barrier *barrier, int64_t count,
-                        benchname_t key, b_bench_method bench_method,
-                        void *data) {
+int b_exec_bench_thread(struct BenchmarkResult *result, int64_t count,
+                        benchname_t key, int threads_bench,
+                        b_bench_method method_bench, int threads_nobench,
+                        b_bench_method method_nobench, void *data,
+                        char start_sync) {
+    int i;
+    int ret = BENCH_SUCCESS;
+    thread *ts_nob;
+    b_start_barrier barrier;
+    b_start_barrier *p_barrier;
+
+    if (start_sync) {
+        if (b_init_barrier(&barrier, threads_bench + threads_nobench) !=
+            BENCH_SUCCESS) {
+            return BENCH_ERROR;
+        }
+        p_barrier = &barrier;
+    } else {
+        p_barrier = NULL;
+    }
+
+    if (threads_nobench > 0) {
+        ts_nob = malloc(sizeof(thread) * threads_nobench);
+        for (i = 0; i < threads_nobench; i++) {
+            ts_nob[i].b.id = i;
+            ts_nob[i].b.key = key;
+            ts_nob[i].b.n = count;
+            ts_nob[i].b.data = data;
+            ts_nob[i].b.running = 0;
+            ts_nob[i].b.samples = calloc(sizeof(int64_t), count + 2);
+            ts_nob[i].b.start_time.sec = 0;
+            ts_nob[i].b.start_time.nsec = 0;
+            ts_nob[i].b.end_time.sec = 0;
+            ts_nob[i].b.end_time.nsec = 0;
+
+            if (start_sync) {
+                ts_nob[i].b.start_sync = thread_bench_start_sync;
+            } else {
+                ts_nob[i].b.start_sync = NULL;
+            }
+            ts_nob[i].barrier = p_barrier;
+
+            ts_nob[i].status = BENCH_ERROR;
+            ts_nob[i].bench_method = method_nobench;
+        }
+    } else {
+        ts_nob = NULL;
+    }
+
+    for (i = 0; i < threads_nobench; i++) {
+        if (pthread_create(&ts_nob[i].tid, NULL, thread_bench_start,
+                           &ts_nob[i]) != 0) {
+            fprintf(stderr, "failed to create thread\n");
+            abort();
+        }
+    }
+
+    ret = b_exec_bench_thread_ex(result, count, key, threads_bench,
+                                 method_bench, data, p_barrier);
+
+    if (threads_nobench > 0 && method_nobench != NULL) {
+        for (i = 0; i < threads_nobench; i++) {
+           ts_nob[i].b.running = 0;
+        }
+        for (i = 0; i < threads_nobench; i++) {
+            pthread_join(ts_nob[i].tid, NULL);
+            if (ts_nob[i].status != BENCH_SUCCESS) {
+                ret = BENCH_ERROR;
+                BENCH_STATUS++;
+            }
+        }
+    }
+
+    free(ts_nob);
+    return ret;
+}
+
+int b_exec_bench_thread_ex(struct BenchmarkResult *result, int64_t count,
+                           benchname_t key, int threads_bench,
+                           b_bench_method method_bench, void *data,
+                           b_start_barrier *barrier) {
     int i;
     int ret = BENCH_SUCCESS;
     thread *ts;
 
-    if (threads < 1) {
+    if (threads_bench < 1) {
         return BENCH_ERROR;
     }
-    ts = malloc(sizeof(thread) * threads);
+    ts = malloc(sizeof(thread) * threads_bench);
 
     result->count = count;
     result->key = key;
-    result->threads = threads;
+    result->threads = threads_bench;
 
-    for (i = 0; i < threads; i++) {
+    for (i = 0; i < threads_bench; i++) {
+        ts[i].b.id = i;
         ts[i].b.key = key;
         ts[i].b.n = count;
         ts[i].b.data = data;
@@ -135,12 +214,12 @@ int b_exec_bench_thread(struct BenchmarkResult *result, int threads,
         }
 
         ts[i].status = BENCH_ERROR;
-        ts[i].bench_method = bench_method;
+        ts[i].bench_method = method_bench;
 
         ts[i].barrier = barrier;
     }
 
-    for (i = 0; i < threads; i++) {
+    for (i = 0; i < threads_bench; i++) {
         if (pthread_create(&ts[i].tid, NULL, thread_bench_start, &ts[i]) != 0) {
             fprintf(stderr, "failed to create thread\n");
             abort();
@@ -149,20 +228,19 @@ int b_exec_bench_thread(struct BenchmarkResult *result, int threads,
 
     b_wait_barrier(barrier);
 
-    for (i = 0; i < threads; i++) {
+    for (i = 0; i < threads_bench; i++) {
         pthread_join(ts[i].tid, NULL);
         if (ts[i].status != BENCH_SUCCESS) {
-            ts[i].b.n = 0;
             ret = BENCH_ERROR;
             BENCH_STATUS++;
         }
     }
 
     if (ret == BENCH_SUCCESS) {
-        update_stats_thread(ts, threads, result);
+        update_stats_thread(ts, threads_bench, result);
     }
 
-    for (i = 0; i < threads; i++) {
+    for (i = 0; i < threads_bench; i++) {
         free(ts[i].b.samples);
     }
 

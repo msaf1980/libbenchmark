@@ -20,6 +20,7 @@ typedef struct nano_clock {
 typedef int (*b_sync_method)(void *b /* struct B * b */);
 
 struct B {
+    int id;
     benchname_t key;
     int64_t n;
     int running;

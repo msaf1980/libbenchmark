@@ -1,3 +1,4 @@
+/* run threaded benchmark with 2 bench thread and external barrier and 3 nobench thread */
 #include <benchmark_threads.h>
 
 #include <stdio.h>
@@ -58,15 +59,23 @@ int benchmark_method(B *b) {
 }
 
 void benchmark_example() {
-    int threads = 2;
-    BENCH_T(1000, "bench samples tests", threads, &benchmark_sample_method, 0,
-            NULL, NULL, NULL, 1);
+    int threads;
+    b_start_barrier barrier;
+
+    threads = 2;
+    b_init_barrier(&barrier, threads);
+    BENCH_T_EX(1000, "bench samples tests", threads, &benchmark_sample_method,
+               NULL, NULL, &barrier);
 }
 
 void benchmark_sampling_example() {
-    int threads = 2;
-    BENCH_T(1000, "sampling bench samples tests", threads, &benchmark_method, 0,
-            NULL, NULL, NULL, 1);
+    int threads;
+    b_start_barrier barrier;
+
+    threads = 2;
+    b_init_barrier(&barrier, threads);
+    BENCH_T_EX(1000, "sampling bench samples tests", threads, &benchmark_method,
+               NULL, NULL, &barrier);
 }
 
 void custom_print(void *data) {
@@ -76,11 +85,15 @@ void custom_print(void *data) {
 
 void benchmark_custom_print() {
     // Example for print custom metrics
-    char *msg = "custom";
+    const char *msg = "custom";
 
-    int threads = 2;
-    BENCH_T(1000, "bench custom print", threads, &benchmark_sample_method, 0,
-               NULL, NULL, msg, 1);
+    int threads;
+    b_start_barrier barrier;
+
+    threads = 2;
+    b_init_barrier(&barrier, threads);
+    BENCH_T_EX(1000, "bench custom print", threads, &benchmark_sample_method,
+               custom_print, (void *) msg, &barrier);
 }
 
 int main() {

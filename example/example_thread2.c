@@ -1,7 +1,30 @@
+/* run threaded benchmark with 2 bench thread and 1 nobench thread */
 #include <benchmark_threads.h>
 
 #include <stdio.h>
 #include <unistd.h>
+
+int nobench_method(B *b) {
+
+    /* Do thread-specific setup here. Also sync bench start */
+
+    (void) b_start(b);
+
+    if (b_start_sync(b) != BENCH_SUCCESS) {
+        return BENCH_ERROR;
+    }
+
+
+    while (b_running(b)) {
+        /* Do some work here */
+        usleep(10);
+    }
+
+    /* Do cleanup here */
+
+    return BENCH_SUCCESS;
+}
+
 
 int benchmark_sample_method(B *b) {
     int i;
@@ -59,14 +82,14 @@ int benchmark_method(B *b) {
 
 void benchmark_example() {
     int threads = 2;
-    BENCH_T(1000, "bench samples tests", threads, &benchmark_sample_method, 0,
-            NULL, NULL, NULL, 1);
+    BENCH_T(1000, "bench samples tests", threads, &benchmark_sample_method, 1,
+            &nobench_method, NULL, NULL, 1);
 }
 
 void benchmark_sampling_example() {
     int threads = 2;
-    BENCH_T(1000, "sampling bench samples tests", threads, &benchmark_method, 0,
-            NULL, NULL, NULL, 1);
+    BENCH_T(1000, "sampling bench samples tests", threads, &benchmark_method, 1,
+            &nobench_method, NULL, NULL, 1);
 }
 
 void custom_print(void *data) {
@@ -79,8 +102,8 @@ void benchmark_custom_print() {
     char *msg = "custom";
 
     int threads = 2;
-    BENCH_T(1000, "bench custom print", threads, &benchmark_sample_method, 0,
-               NULL, NULL, msg, 1);
+    BENCH_T(1000, "bench custom print", threads, &benchmark_sample_method, 1,
+               &nobench_method, NULL, msg, 1);
 }
 
 int main() {

@@ -21,31 +21,33 @@ extern "C" {
 extern int BENCH_STATUS;
 
 /* Define macros */
-#define BENCH(_count, name, method, print_custom, data)                        \
+#define BENCH(count, name, method, print_custom, data)                         \
     do {                                                                       \
         struct BenchmarkResult bm_result;                                      \
-        if (b_exec_bench(&bm_result, _count, (benchname_t) name, method,       \
+        if (b_exec_bench(&bm_result, count, (benchname_t) name, method,        \
                          data) == BENCH_SUCCESS) {                             \
             b_print_result(&bm_result, 0, 1, print_custom, data);              \
         }                                                                      \
     } while (0);
 
 // For minimize jitter
-#define BENCH_S(_samples, _count, name, method, print_custom, data)            \
+#define BENCH_S(samples, count, name, method, print_custom, data)              \
     do {                                                                       \
-        int _i, _n;                                                            \
+        int _i, _n = BENCH_SUCCESS;                                            \
         struct BenchmarkResult bm_result;                                      \
         struct BenchmarkResult *bm_results =                                   \
-            malloc(sizeof(BenchmarkResult) * _samples);                        \
-        for (_i = 0; _i < _samples; _i++) {                                    \
-            if (b_exec_bench(&bm_results[_i], _count, (benchname_t) name,      \
+            malloc(sizeof(BenchmarkResult) * samples);                         \
+        for (_i = 0; _i < samples; _i++) {                                     \
+            if (b_exec_bench(&bm_results[_i], count, (benchname_t) name,      \
                              method, data) != BENCH_SUCCESS) {                 \
-                bm_results[_i].count = 0;                                      \
+                _n = BENCH_ERROR;                                               \
             }                                                                  \
         }                                                                      \
-        _n = b_samples_aggregate(&bm_result, bm_results, _samples);            \
+        if (_n == BENCH_SUCCESS) {                                              \
+            _n = b_samples_aggregate(&bm_result, bm_results, samples);         \
+            b_print_result(&bm_result, 0, _n, print_custom, data);             \
+        }                                                                      \
         free(bm_results);                                                      \
-        b_print_result(&bm_result, 0, _n, print_custom, data);                 \
     } while (0);
 
 /* Define the bench struct */
@@ -76,6 +78,8 @@ benchname_t b_key(struct B *b);
 int b_count(struct B *b);
 
 void b_sample(struct B *b, int *index);
+int b_running(struct B *b);
+int b_start(struct B *b);
 int b_start_timer(struct B *b);
 int b_stop_timer(struct B *b);
 int b_start_sync(struct B *b);

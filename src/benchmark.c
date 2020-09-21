@@ -55,6 +55,15 @@ inline void b_sample(struct B *b, int *index) {
     b->samples[*index] = get_nanos();
 }
 
+int b_running(struct B *b) {
+    return b->running;
+}
+
+int b_start(struct B *b) {
+    b->running = 1;
+    return BENCH_SUCCESS;
+}
+
 int b_start_timer(struct B *b) {
     if (!b->running) {
         get_timespec(&b->start_time);
@@ -94,7 +103,9 @@ int cmpint64p(const void *p1, const void *p2) {
 }
 
 void set_stat(stat *s, int64_t sorted[], int64_t size) {
-    if ((size % 2) == 0) {
+    if (size == 2) {
+        s->median = ((double) sorted[0] + sorted[size - 1]) / 2;
+    } else if ((size % 2) == 0) {
         s->median = (double) (sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
     } else {
         s->median = (double) sorted[(size / 2) + 1];
@@ -195,6 +206,7 @@ int b_exec_bench(struct BenchmarkResult *result, int64_t count, benchname_t key,
     result->key = key;
     result->threads = 0;
 
+    b.id = 0;
     b.key = key;
     b.n = count;
     b.data = data;
