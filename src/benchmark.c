@@ -248,8 +248,8 @@ b_exec_bench(struct BenchmarkResult * result, int64_t count, benchname_t key, b_
 	return ret;
 }
 
-const char	* table_header_fmt = "\n%24s\t%6s\t%10s\t%14s\t%14s\t%14s\t%14s\t%14s\t%14s\n";
-const char	* table_stats_fmt = "%24s\t%6d\t%10d\t%14.2f\t%14.2f";
+const char	* table_header_fmt = "\n%24s\t%5s\t%9s\t%10s\t%14s\t%14s\t%14s\t%14s\t%14s\t%14s\n";
+const char	* table_stats_fmt = "%24s\t%5d\t%9d\t%10lld\t%14.2f\t%14.2f";
 
 const char	* table_nomedian_fmt = "\t%14s\t%14s\t%14s\t%14s";
 const char	* table_median_fmt = "\t%14.2f\t%14.2f\t%14.2f\t%14.2f";
@@ -258,6 +258,7 @@ int
 b_print_header() {
 	printf(table_header_fmt,
 		"test",
+		"thrds",
 		"samples",
 		"count",
 		"ns/op", "op/s",
@@ -268,14 +269,14 @@ b_print_header() {
 }
 
 int
-b_print_result(struct BenchmarkResult * result, int64_t samples, b_print_custom_results print_custom, void *data) {
+b_print_result(struct BenchmarkResult * result, int threads, int64_t samples, b_print_custom_results print_custom, void *data) {
 	if (samples < 1) {
 		return BENCH_ERROR;
 	}
 	setlocale(LC_NUMERIC, "");
 	printf(table_stats_fmt,
 		(char*)result->key,
-		samples,
+		threads, samples,
 		result->count,
 		result->ns_per_op, result->ops_per_s
 	);
@@ -297,12 +298,23 @@ b_samples_aggregate(struct BenchmarkResult * result, struct BenchmarkResult * s,
 	int i;
 
 	int n = 0;
-	double *ns_median_d = malloc(sizeof(double) * samples);
-	double *ns_per_op_d = malloc(sizeof(double) * samples);
-	double *ops_per_s_d = malloc(sizeof(double) * samples);
+	double *ns_median_d;
+	double *ns_per_op_d;
+	double *ops_per_s_d;
+
+	if (samples == 0) {
+		return -1;
+	} else if (samples == 1) {
+		*result = s[0];
+		return 1;
+	}
+	result->key = s[0].key;
+
+	ns_median_d = malloc(sizeof(double) * samples);
+	ns_per_op_d = malloc(sizeof(double) * samples);
+	ops_per_s_d = malloc(sizeof(double) * samples);
 
 	result->count = 0;
-	result->key = s[0].key;
 	result->ns_duration = 0;
 	result->ns_median = 0;
 	result->ns_max = DBL_MIN;

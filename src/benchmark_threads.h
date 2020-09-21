@@ -12,20 +12,13 @@ extern "C" {
 
 typedef pthread_barrier_t b_start_barrier;
 
-#define BENCH_T(_threads, _barrier, _samples, _count, name, method, print_custom, data)					     \
-	do {																					         \
-		int _i, _n;																					 \
-		struct BenchmarkResult bm_result;   														 \
-		struct BenchmarkResult *bm_results = malloc(sizeof(BenchmarkResult) * _samples);  			 \
-		for (_i = 0; _i < _samples; _i++) {                                                             \
-			if (b_exec_bench_thread(&bm_results[_i], _threads, _barrier, _count, (benchname_t)name,             \
-				method, data) != BENCH_SUCCESS) {                                                    \
-				bm_results[_i].count = 0;                                                             \
-			}                                                                                        \
-		}                                                                                            \
-		_n = b_samples_aggregate(&bm_result, bm_results, _samples);                                   \
-		free(bm_results);                                                                            \
-		b_print_result(&bm_result, _n, print_custom, data);					   			             \
+#define BENCH_T(_threads, _barrier, _count, name, method, print_custom, data)			     	\
+	do {																					         	\
+		struct BenchmarkResult bm_result;   														 	\
+		if (b_exec_bench_thread(&bm_result, _threads, _barrier, _count, (benchname_t)name,       	    \
+			method, data) == BENCH_SUCCESS) {                                                    		\
+			b_print_result(&bm_result, _threads, 1, print_custom, data);					   			            \
+		}                                                                                            	\
 	}while(0);
 
 int b_init_barrier(b_start_barrier *barrier, int waiters);

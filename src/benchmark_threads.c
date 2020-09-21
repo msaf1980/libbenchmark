@@ -72,9 +72,21 @@ int update_stats_thread(thread * ts, int threads, struct BenchmarkResult * resul
     }
     qsort(sorted, count, sizeof(int64_t), cmpint64p);
     set_stat(&st, sorted, count);
-	result->ns_median = st.median;
-	result->ns_min = st.min;
-	result->ns_max = st.max;
+
+    if (st.median == 0 && threads > 1) {
+        for (i = 0; i < threads; i++) {
+            sorted[i] = ts[i].b.ns_duration / ts[i].b.n;
+        }
+        qsort(sorted, threads, sizeof(int64_t), cmpint64p);
+        set_stat(&st, sorted, threads);
+        result->ns_median = st.median;
+        result->ns_min = st.min;
+        result->ns_max = st.max;
+    }
+
+    result->ns_median = st.median;
+    result->ns_min = st.min;
+    result->ns_max = st.max;
 
     result->key = ts[0].b.key;
 	result->count = count;
@@ -143,7 +155,9 @@ b_exec_bench_thread(struct BenchmarkResult * result, int threads, b_start_barrie
         }
     }
 
-    update_stats_thread(ts, threads, result);
+    if (ret == BENCH_SUCCESS) {
+        update_stats_thread(ts, threads, result);
+    }
 
 	for (i = 0; i < threads; i++) {
 		free(ts[i].b.samples);

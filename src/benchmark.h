@@ -25,7 +25,7 @@ extern int BENCH_STATUS;
 	do {																							\
 		struct BenchmarkResult bm_result;															\
 		if (b_exec_bench(&bm_result, _count, (benchname_t)name, method, data) == BENCH_SUCCESS) {   \
-			b_print_result(&bm_result, 1, print_custom, data);										\
+			b_print_result(&bm_result, 0, 1, print_custom, data);										\
 		}                                                                         					\
 	}while(0);
 
@@ -43,7 +43,7 @@ extern int BENCH_STATUS;
 		}                                                                                         	\
 		_n = b_samples_aggregate(&bm_result, bm_results, _samples);                                	\
 		free(bm_results);                                                                         	\
-		b_print_result(&bm_result, _n, print_custom, data);										    \
+		b_print_result(&bm_result, 0, _n, print_custom, data);										    \
 	}while(0);
 
 /* Define the bench struct */
@@ -80,7 +80,7 @@ int b_start_sync(struct B * b);
 int b_exec_bench(struct BenchmarkResult * result, int64_t count, benchname_t key, b_bench_method bench_method, void *data);
 
 int b_print_header();
-int b_print_result(struct BenchmarkResult * result, int64_t samples, b_print_custom_results print_custom, void *data);
+int b_print_result(struct BenchmarkResult * result, int threads, int64_t samples, b_print_custom_results print_custom, void *data);
 int b_samples_aggregate(struct BenchmarkResult * result, struct BenchmarkResult * s, int64_t samples);
 
 #ifdef __cplusplus

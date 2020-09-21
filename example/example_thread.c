@@ -66,7 +66,7 @@ benchmark_example() {
 
 	threads = 2;
 	b_init_barrier(&barrier, threads);
-	BENCH_T(threads, &barrier, 10, 1000, "bench samples tests", &benchmark_sample_method, NULL, NULL);
+	BENCH_T(threads, &barrier, 1000, "bench samples tests", &benchmark_sample_method, NULL, NULL);
 }
 
 void
@@ -76,7 +76,7 @@ benchmark_sampling_example() {
 
 	threads = 2;
 	b_init_barrier(&barrier, threads);
-	BENCH_T(threads, &barrier, 10, 1000, "sampling bench samples tests", &benchmark_method, NULL, NULL);
+	BENCH_T(threads, &barrier, 1000, "sampling bench samples tests", &benchmark_method, NULL, NULL);
 }
 
 void
@@ -95,7 +95,7 @@ benchmark_custom_print() {
 
 	threads = 2;
 	b_init_barrier(&barrier, threads);
-	BENCH_T(threads, &barrier, 10, 1000, "bench custom print", &benchmark_sample_method, custom_print, (void *) msg);
+	BENCH_T(threads, &barrier, 1000, "bench custom print", &benchmark_sample_method, custom_print, (void *) msg);
 }
 
 int
