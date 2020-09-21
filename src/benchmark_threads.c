@@ -138,6 +138,8 @@ b_exec_bench_thread(struct BenchmarkResult * result, int threads, b_start_barrie
         pthread_join(ts[i].tid, NULL);
         if (ts[i].status != BENCH_SUCCESS) {
             ts[i].b.n = 0;
+            ret = BENCH_ERROR;
+            BENCH_STATUS++;
         }
     }
 
