@@ -35,8 +35,7 @@ Sample code from /example/example.c
 #include <unistd.h>
 
 int
-benchmark_sample_method(B * b, void *data) {
-	void *d BENCH_UNUSED_VARIABLE = data;
+benchmark_sample_method(B * b) {
 	int i;
 	int j;
 
@@ -60,8 +59,7 @@ benchmark_sample_method(B * b, void *data) {
 }
 
 int
-benchmark_method(B * b, void *data) {
-	void *d BENCH_UNUSED_VARIABLE = data;
+benchmark_method(B * b) {
 	int i;
 	int j;
 
@@ -113,6 +111,7 @@ benchmark_custom_print() {
 
 int
 main() {
+	b_print_header();
 	benchmark_example();
 	benchmark_sampling_example();
 	benchmark_custom_print();

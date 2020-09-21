@@ -6,7 +6,7 @@
 int last_count = 0;
 class Given_a_sample_benchmark_success : public testing::Test {
 protected:
-	static int sample_success(B * b, void *data) {
+	static int sample_success(B * b) {
 		printf("sample called: %d", b_count(b));
 		last_count = b_count(b);
 		return BENCH_SUCCESS;
@@ -32,7 +32,7 @@ TEST_F(Given_a_sample_benchmark_success, _when_BENCH_is_called_twice) {
 
 class Given_a_sample_benchmark_error : public testing::Test {
 protected:
-	static int sample_error(B * b, void *data) {
+	static int sample_error(B * b) {
 		printf("sample called: %d", b_count(b));
 		last_count = b_count(b);
 		return BENCH_ERROR;

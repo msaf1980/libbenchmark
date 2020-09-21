@@ -1,15 +1,18 @@
-#include <benchmark.h>
+#include <benchmark_threads.h>
 
 #include <unistd.h>
 #include <stdio.h>
 
 int
-benchmark_sample_method(B * b, void *data) {
-	void *d BENCH_UNUSED_VARIABLE = data;
+benchmark_sample_method(B * b) {
 	int i;
 	int j;
 
-	/* Do setup here */
+	/* Do thread-specific setup here. Also sync bench start */
+
+    if (b_start_sync(b) != BENCH_SUCCESS) {
+        return BENCH_ERROR;
+    }
 	
 	/* Start the clock at the last possible second!  */
 	b_start_timer(b);
@@ -29,12 +32,15 @@ benchmark_sample_method(B * b, void *data) {
 }
 
 int
-benchmark_method(B * b, void *data) {
-	void *d BENCH_UNUSED_VARIABLE = data;
+benchmark_method(B * b) {
 	int i;
 	int j;
 
-	/* Do setup here */
+	/* Do thread-specific setup here. Also sync bench start */
+
+    if (b_start_sync(b) != BENCH_SUCCESS) {
+        return BENCH_ERROR;
+    }
 	
 	/* Start the clock at the last possible second!  */
 	b_start_timer(b);
@@ -55,33 +61,46 @@ benchmark_method(B * b, void *data) {
 
 void
 benchmark_example() {
-	BENCH(10000, "bench tests", &benchmark_sample_method, NULL, NULL);
-	// For minimize jitter 1000 samples with 10 count
-	BENCH_S(1000, 10, "bench samples tests", &benchmark_sample_method, NULL, NULL);
+	int threads;
+	b_start_barrier barrier;
+
+	threads = 2;
+	b_init_barrier(&barrier, threads);
+	BENCH_T(threads, &barrier, 10, 1000, "bench samples tests", &benchmark_sample_method, NULL, NULL);
 }
 
 void
 benchmark_sampling_example() {
-	BENCH(10000, "sampling bench tests", &benchmark_method, NULL, NULL);
-	// For minimize jitter 1000 samples with 10 count, no sampling for minimal impact
-	BENCH_S(1000, 10, "sampling bench samples tests", &benchmark_method, NULL, NULL);
+	int threads;
+	b_start_barrier barrier;
+
+	threads = 2;
+	b_init_barrier(&barrier, threads);
+	BENCH_T(threads, &barrier, 10, 1000, "sampling bench samples tests", &benchmark_method, NULL, NULL);
 }
 
 void
 custom_print(void *data) {
-    const char *msg = (const char *) data;
-    printf("\t	%s\t%s\t%s", msg, "test1=value1", "test2=value2");
+	const char *msg = (const char *) data;
+	printf("\t	%s\t%s\t%s", msg, "test1=value1", "test2=value2");
 }
 
 void
 benchmark_custom_print() {
 	// Example for print custom metrics
 	const char *msg = "custom";
-	BENCH(10000, "bench custom print", &benchmark_sample_method, custom_print, (void *) msg);
+
+	int threads;
+	b_start_barrier barrier;
+
+	threads = 2;
+	b_init_barrier(&barrier, threads);
+	BENCH_T(threads, &barrier, 10, 1000, "bench custom print", &benchmark_sample_method, custom_print, (void *) msg);
 }
 
 int
 main() {
+    b_print_header();																			\
 	benchmark_example();
 	benchmark_sampling_example();
 	benchmark_custom_print();

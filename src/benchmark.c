@@ -15,34 +15,10 @@
 #include <unistd.h>
 #endif
 
-#ifdef BENCH_THREADS
-#include <pthread.h>
-#endif
-
+#include "benchmark_internal.h"
 #include "benchmark.h"
 
-#define MILLIS 1E6
-#define NANOS 1E9
-
-typedef struct nano_clock {
-	int64_t	sec;
-	int64_t	nsec;
-} nano_clock;
-
-
 int BENCH_STATUS = 0;
-
-struct B {
-	benchname_t					key;
-	int64_t						n;
-	int 						running;
-	void						* clock_token;
-	struct nano_clock 			start_time;
-	struct nano_clock			end_time;
-	int64_t				        * samples;
-	int64_t					    ns_duration;
-	b_bench_method		 		bench_method;
-};
 
 benchname_t
 b_get_key(struct B * b) {
@@ -120,18 +96,36 @@ b_stop_timer(struct B * b) {
 	return BENCH_SUCCESS;
 }
 
-typedef struct {
-	double median;
-	double min;
-	double max;	
-} stat;
+int
+b_start_sync(struct B * b) {
+	if (b->start_sync == NULL) {
+		return BENCH_SUCCESS;
+	}
+	return b->start_sync(b);
+}
 
-static int cmpint64p(const void *p1, const void *p2) {
+int cmpint64p(const void *p1, const void *p2) {
   	return ( *(int64_t*)p1 - *(int64_t*)p2 ); 
 }
 
+void
+set_stat(stat *s, int64_t sorted[], int64_t size) {
+	if((size % 2) == 0) {
+		s->median = (double)(sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
+	} else {
+		s->median = (double)sorted[(size / 2) + 1];
+	}
+	if (s->median == 0) {
+		s->min = 0;
+		s->max = 0;
+	} else {
+		s->min = (double)sorted[0];
+		s->max = (double)sorted[size-1];
+	}
+}
+
 stat
-get_stat(int64_t data[], int size) {
+get_stat(int64_t data[], int64_t size) {
     int i = 0;
     stat s;
     int64_t *sorted = malloc(sizeof(int64_t) * size);
@@ -139,18 +133,7 @@ get_stat(int64_t data[], int size) {
         sorted[i] = data[i+1] - data[i];
     }
 	qsort(sorted, size, sizeof(int64_t), cmpint64p);
-    if((size % 2) == 0) {
-		s.median = (double)(sorted[size / 2] + sorted[(size / 2) + 1]) / 2;
-	} else {
-		s.median = (double)sorted[(size / 2) + 1];
-	}
-	if (s.median == 0) {
-		s.min = 0;
-		s.max = 0;
-	} else {
-		s.min = (double)sorted[0];
-		s.max = (double)sorted[size-1];
-	}
+    set_stat(&s, sorted, size);
 	free(sorted);
 	return s;
 }
@@ -177,8 +160,8 @@ cmpdoublep(const void *p1, const void *p2) {
 }
 
 stat
-get_double_stat(double data[], int size) {
-    int i = 0;
+get_double_stat(double data[], int64_t size) {
+    int64_t i = 0;
     stat s;
     double *sorted = malloc(sizeof(double) * size);
     for (i = 0; i < size; i++) {
@@ -225,25 +208,27 @@ get_double_mean(double data[], int size) {
 }
 
 int
-b_exec_bench(struct BenchmarkResult * result, int count, benchname_t key, b_bench_method bench_method, void *data) {
+b_exec_bench(struct BenchmarkResult * result, int64_t count, benchname_t key, b_bench_method bench_method, void *data) {
 	struct B b;
 	double s;
 	int ret = BENCH_SUCCESS;
 
 	result->count = count;
 	result->key = key;
+	result->threads = 0;
 
 	b.key = key;
 	b.n = count;
+	b.data = data;
+	b.start_sync = NULL;
 	b.running = 0;
 	b.samples = calloc(sizeof(int64_t), count + 2);
 	b.start_time.sec = 0;
 	b.start_time.nsec = 0;
 	b.end_time.sec = 0;
 	b.end_time.nsec = 0;
-	b.bench_method = bench_method;
 
-	if (b.bench_method(&b, data) != BENCH_SUCCESS) {
+	if (bench_method(&b) != BENCH_SUCCESS) {
 		ret = BENCH_ERROR;
 		BENCH_STATUS++;
 	}
@@ -269,27 +254,25 @@ const char	* table_stats_fmt = "%24s\t%6d\t%10d\t%14.2f\t%14.2f";
 const char	* table_nomedian_fmt = "\t%14s\t%14s\t%14s\t%14s";
 const char	* table_median_fmt = "\t%14.2f\t%14.2f\t%14.2f\t%14.2f";
 
-
-static char first = 0;
+int
+b_print_header() {
+	printf(table_header_fmt,
+		"test",
+		"samples",
+		"count",
+		"ns/op", "op/s",
+		"min ns/op", "max ns/op",			
+		"median ns/op", "median op/s"
+	);
+	return BENCH_SUCCESS;
+}
 
 int
-b_print_result(struct BenchmarkResult * result, int samples, b_print_custom_results print_custom, void *data) {
+b_print_result(struct BenchmarkResult * result, int64_t samples, b_print_custom_results print_custom, void *data) {
 	if (samples < 1) {
 		return BENCH_ERROR;
 	}
 	setlocale(LC_NUMERIC, "");
-	if (first == 0) {
-		first = 1;
-		printf(table_header_fmt,
-			"test",
-			"samples",
-			"count",
-			"ns/op", "op/s",
-			"min ns/op", "max ns/op",			
-			"median ns/op", "median op/s"
-		);
-	}
-
 	printf(table_stats_fmt,
 		(char*)result->key,
 		samples,
