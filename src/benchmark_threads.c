@@ -6,7 +6,7 @@
 
 typedef struct {
     pthread_t tid;
-    int       status;
+    int status;
     b_bench_method bench_method;
     b_start_barrier *barrier;
     struct B b;
@@ -43,11 +43,12 @@ int b_wait_barrier(b_start_barrier *barrier) {
 }
 
 int thread_bench_start_sync(void *b) {
-    thread *t = (thread*) ((char *)b - offsetof(thread, b));
+    thread *t = (thread *) ((char *) b - offsetof(thread, b));
     return b_wait_barrier(t->barrier);
 }
 
-int update_stats_thread(thread * ts, int threads, struct BenchmarkResult * result) {
+int update_stats_thread(thread *ts, int threads,
+                        struct BenchmarkResult *result) {
     int64_t i;
     int64_t n = 0;
     int64_t count = 0;
@@ -63,9 +64,9 @@ int update_stats_thread(thread * ts, int threads, struct BenchmarkResult * resul
         if (ts[i].b.n > 0) {
             int64_t j;
             for (j = 0; j < ts[i].b.n; j++) {
-                sorted[j+n] = ts[i].b.samples[j+1] - ts[i].b.samples[j];
+                sorted[j + n] = ts[i].b.samples[j + 1] - ts[i].b.samples[j];
             }
-            result->ns_per_op += (double)(ts[i].b.ns_duration / count);
+            result->ns_per_op += (double) (ts[i].b.ns_duration / count);
             result->ns_duration += ts[i].b.ns_duration;
             n += ts[i].b.n;
         }
@@ -89,41 +90,43 @@ int update_stats_thread(thread * ts, int threads, struct BenchmarkResult * resul
     result->ns_max = st.max;
 
     result->key = ts[0].b.key;
-	result->count = count;
+    result->count = count;
 
     result->ns_duration /= threads;
-    s = (double)(result->ns_duration / NANOS);
-    result->ops_per_s = (double)(count / s);
+    s = (double) (result->ns_duration / NANOS);
+    result->ops_per_s = (double) (count / s);
 
-	free(sorted);
+    free(sorted);
     return BENCH_SUCCESS;
 }
 
-int
-b_exec_bench_thread(struct BenchmarkResult * result, int threads, b_start_barrier *barrier, int64_t count, benchname_t key, b_bench_method bench_method, void *data) {
-	int i;
-	int ret = BENCH_SUCCESS;
-	thread *ts;
+int b_exec_bench_thread(struct BenchmarkResult *result, int threads,
+                        b_start_barrier *barrier, int64_t count,
+                        benchname_t key, b_bench_method bench_method,
+                        void *data) {
+    int i;
+    int ret = BENCH_SUCCESS;
+    thread *ts;
 
     if (threads < 1) {
         return BENCH_ERROR;
     }
     ts = malloc(sizeof(thread) * threads);
 
-	result->count = count;
-	result->key = key;
-	result->threads = threads;
+    result->count = count;
+    result->key = key;
+    result->threads = threads;
 
-	for (i = 0; i < threads; i++) {
-		ts[i].b.key = key;
-		ts[i].b.n = count;
-		ts[i].b.data = data;
-		ts[i].b.running = 0;
-		ts[i].b.samples = calloc(sizeof(int64_t), count + 2);
-		ts[i].b.start_time.sec = 0;
-		ts[i].b.start_time.nsec = 0;
-		ts[i].b.end_time.sec = 0;
-		ts[i].b.end_time.nsec = 0;
+    for (i = 0; i < threads; i++) {
+        ts[i].b.key = key;
+        ts[i].b.n = count;
+        ts[i].b.data = data;
+        ts[i].b.running = 0;
+        ts[i].b.samples = calloc(sizeof(int64_t), count + 2);
+        ts[i].b.start_time.sec = 0;
+        ts[i].b.start_time.nsec = 0;
+        ts[i].b.end_time.sec = 0;
+        ts[i].b.end_time.nsec = 0;
 
         if (barrier == NULL) {
             ts[i].b.start_sync = NULL;
@@ -135,14 +138,14 @@ b_exec_bench_thread(struct BenchmarkResult * result, int threads, b_start_barrie
         ts[i].bench_method = bench_method;
 
         ts[i].barrier = barrier;
-	}
+    }
 
-	for (i = 0; i < threads; i++) {
-		if (pthread_create(&ts[i].tid, NULL, thread_bench_start, &ts[i]) != 0) {
+    for (i = 0; i < threads; i++) {
+        if (pthread_create(&ts[i].tid, NULL, thread_bench_start, &ts[i]) != 0) {
             fprintf(stderr, "failed to create thread\n");
             abort();
         }
-	}
+    }
 
     b_wait_barrier(barrier);
 
@@ -159,10 +162,10 @@ b_exec_bench_thread(struct BenchmarkResult * result, int threads, b_start_barrie
         update_stats_thread(ts, threads, result);
     }
 
-	for (i = 0; i < threads; i++) {
-		free(ts[i].b.samples);
-	}
+    for (i = 0; i < threads; i++) {
+        free(ts[i].b.samples);
+    }
 
-	free(ts);
-	return ret;
+    free(ts);
+    return ret;
 }
