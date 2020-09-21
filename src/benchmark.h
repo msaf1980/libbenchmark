@@ -32,18 +32,18 @@ extern int BENCH_STATUS;
 // For minimize jitter
 #define BENCH_S(_samples, _count, name, method, print_custom, data)							     	\
 	do {																							\
-		int i, n;																					\
+		int _i, _n;																					\
 		struct BenchmarkResult bm_result;   														\
 		struct BenchmarkResult *bm_results = malloc(sizeof(BenchmarkResult) * _samples);  			\
-		for (i = 0; i < _samples; i++) {                                                  			\
-			if (b_exec_bench(&bm_results[i], _count, (benchname_t)name,                          	\
+		for (_i = 0; _i < _samples; _i++) {                                                  			\
+			if (b_exec_bench(&bm_results[_i], _count, (benchname_t)name,                          	\
 				method, data) != BENCH_SUCCESS) {                                                	\
-				bm_results[i].count = 0;                                                          	\
+				bm_results[_i].count = 0;                                                          	\
 			}                                                                                      	\
 		}                                                                                         	\
-		n = b_samples_aggregate(&bm_result, bm_results, _samples);                                	\
+		_n = b_samples_aggregate(&bm_result, bm_results, _samples);                                	\
 		free(bm_results);                                                                         	\
-		b_print_result(&bm_result, n, print_custom, data);										    \
+		b_print_result(&bm_result, _n, print_custom, data);										    \
 	}while(0);
 
 /* Define the bench struct */

@@ -21,7 +21,7 @@
 int BENCH_STATUS = 0;
 
 benchname_t
-b_get_key(struct B * b) {
+b_key(struct B * b) {
 	return b->key;
 }
 

@@ -14,18 +14,18 @@ typedef pthread_barrier_t b_start_barrier;
 
 #define BENCH_T(_threads, _barrier, _samples, _count, name, method, print_custom, data)					     \
 	do {																					         \
-		int i, n;																					 \
+		int _i, _n;																					 \
 		struct BenchmarkResult bm_result;   														 \
 		struct BenchmarkResult *bm_results = malloc(sizeof(BenchmarkResult) * _samples);  			 \
-		for (i = 0; i < _samples; i++) {                                                             \
-			if (b_exec_bench_thread(&bm_results[i], _threads, _barrier, _count, (benchname_t)name,             \
+		for (_i = 0; _i < _samples; _i++) {                                                             \
+			if (b_exec_bench_thread(&bm_results[_i], _threads, _barrier, _count, (benchname_t)name,             \
 				method, data) != BENCH_SUCCESS) {                                                    \
-				bm_results[i].count = 0;                                                             \
+				bm_results[_i].count = 0;                                                             \
 			}                                                                                        \
 		}                                                                                            \
-		n = b_samples_aggregate(&bm_result, bm_results, _samples);                                   \
+		_n = b_samples_aggregate(&bm_result, bm_results, _samples);                                   \
 		free(bm_results);                                                                            \
-		b_print_result(&bm_result, n, print_custom, data);					   			             \
+		b_print_result(&bm_result, _n, print_custom, data);					   			             \
 	}while(0);
 
 int b_init_barrier(b_start_barrier *barrier, int waiters);
