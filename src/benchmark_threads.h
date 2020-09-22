@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include <pthread.h>
+#include <pthread_barrier.h>
 #include <stdint.h>
 
 #include "benchmark.h"
