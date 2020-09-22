@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.6)
 project(LIBBENCHMARK)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
 
 set(LIBBENCHMARK_SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR})

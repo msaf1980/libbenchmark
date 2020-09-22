@@ -1,0 +1,32 @@
+script: make
+language: c
+
+matrix:
+  include:
+    - compiler: gcc
+      os: linux
+      dist: xenial
+    - compiler: clang
+      os: linux
+      dist: xenial
+    - compiler: gcc
+      os: linux
+      dist: bionic
+    - compiler: clang
+      os: linux
+      dist: bionic
+    - compiler: clang
+      os: osx
+
+addons:
+  apt:
+    packages:
+    - cmake-data
+    - cmake
+
+script:
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build .
+  - ctest --output-on-failure
