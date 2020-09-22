@@ -58,7 +58,7 @@ int benchmark_method(B *b) {
     return BENCH_SUCCESS;
 }
 
-void benchmark_example() {
+void benchmark_sampling_example() {
     int threads;
     b_start_barrier barrier;
 
@@ -68,7 +68,7 @@ void benchmark_example() {
                NULL, NULL, &barrier);
 }
 
-void benchmark_sampling_example() {
+void benchmark_example() {
     int threads;
     b_start_barrier barrier;
 

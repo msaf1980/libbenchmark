@@ -30,20 +30,20 @@ extern int BENCH_STATUS;
         }                                                                      \
     } while (0);
 
-// For minimize jitter
-#define BENCH_S(samples, count, name, method, print_custom, data)              \
+/* For minimize jitter do repeated benchmarks */
+#define BENCH_M(samples, count, name, method, print_custom, data)              \
     do {                                                                       \
         int _i, _n = BENCH_SUCCESS;                                            \
         struct BenchmarkResult bm_result;                                      \
         struct BenchmarkResult *bm_results =                                   \
             malloc(sizeof(BenchmarkResult) * samples);                         \
         for (_i = 0; _i < samples; _i++) {                                     \
-            if (b_exec_bench(&bm_results[_i], count, (benchname_t) name,      \
+            if (b_exec_bench(&bm_results[_i], count, (benchname_t) name,       \
                              method, data) != BENCH_SUCCESS) {                 \
-                _n = BENCH_ERROR;                                               \
+                _n = BENCH_ERROR;                                              \
             }                                                                  \
         }                                                                      \
-        if (_n == BENCH_SUCCESS) {                                              \
+        if (_n == BENCH_SUCCESS) {                                             \
             _n = b_samples_aggregate(&bm_result, bm_results, samples);         \
             b_print_result(&bm_result, 0, _n, print_custom, data);             \
         }                                                                      \

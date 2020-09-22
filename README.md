@@ -83,14 +83,14 @@ benchmark_method(B * b) {
 }
 
 void
-benchmark_example() {
+benchmark_sampling_example() {
 	BENCH(10000, "bench tests", &benchmark_sample_method, NULL, NULL);
 	// For minimize jitter 1000 samples with 10 count
 	BENCH_S(1000, 10, "bench samples tests", &benchmark_sample_method, NULL, NULL);
 }
 
 void
-benchmark_sampling_example() {
+benchmark_example() {
 	BENCH(10000, "sampling bench tests", &benchmark_method, NULL, NULL);
 	// For minimize jitter 1000 samples with 10 count, no sampling for minimal impact
 	BENCH_S(1000, 10, "sampling bench samples tests", &benchmark_method, NULL, NULL);

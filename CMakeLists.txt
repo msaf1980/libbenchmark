@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.6)
 
 project(LIBBENCHMARK)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(GTest REQUIRED)
+find_package(Threads REQUIRED)
+
 set(LIBBENCHMARK_SRC_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(LIBBENCHMARK_BUILD_ROOT ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -14,20 +18,5 @@ set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Werror  -pedantic-errors -Wall -ped
 include_directories(${LIBBENCHMARK_SRC_ROOT})
 add_subdirectory(example)
 
-find_package(GTest)
-find_package(Threads)
-if (GTEST_FOUND AND Threads_FOUND)
-    enable_testing()
-    add_subdirectory(test)
-else(GTEST_FOUND AND Threads_FOUND)
-    message(STATUS "No gtest or pthreads found - test not build")
-endif(GTEST_FOUND AND Threads_FOUND)
-
-# uninstall target
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-    IMMEDIATE @ONLY)
-
-add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+enable_testing()
+add_subdirectory(test)

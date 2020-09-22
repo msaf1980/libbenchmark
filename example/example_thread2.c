@@ -80,13 +80,13 @@ int benchmark_method(B *b) {
     return BENCH_SUCCESS;
 }
 
-void benchmark_example() {
+void benchmark_sampling_example() {
     int threads = 2;
     BENCH_T(1000, "bench samples tests", threads, &benchmark_sample_method, 1,
             &nobench_method, NULL, NULL, 1);
 }
 
-void benchmark_sampling_example() {
+void benchmark_example() {
     int threads = 2;
     BENCH_T(1000, "sampling bench samples tests", threads, &benchmark_method, 1,
             &nobench_method, NULL, NULL, 1);
