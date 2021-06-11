@@ -1,0 +1,22 @@
+add_library( benchmark benchmark.c )
+set_target_properties(benchmark PROPERTIES PUBLIC_HEADER "../include/benchmark.h")
+install( TARGETS benchmark DESTINATION "${CMAKE_INSTALL_BINDIR}" )
+
+add_library( benchmark_threads benchmark_threads.c )
+set_target_properties(benchmark_threads PROPERTIES PUBLIC_HEADER "../include/benchmark_threads.h")
+target_link_libraries(benchmark_threads benchmark Threads::Threads)
+install( TARGETS benchmark_threads DESTINATION "${CMAKE_INSTALL_BINDIR}" )
+
+if (MEMSTAT)
+    add_library( benchmarkmem benchmark.c )
+    target_compile_definitions(benchmarkmem PUBLIC -DBENCH_MEMSTAT)
+    target_include_directories(benchmarkmem PRIVATE ${MEMSTAT_INCLUDE})
+    target_link_libraries( benchmarkmem mallocstat dl )
+    install( TARGETS benchmarkmem DESTINATION "${CMAKE_INSTALL_BINDIR}" )
+
+    add_library( benchmarkmem_threads benchmark_threads.c )
+    target_compile_definitions(benchmarkmem_threads PUBLIC -DBENCH_MEMSTAT)
+    target_include_directories(benchmarkmem_threads PRIVATE ${MEMSTAT_INCLUDE})
+    target_link_libraries(benchmarkmem_threads benchmark mallocstat dl Threads::Threads)
+    install( TARGETS benchmarkmem_threads DESTINATION "${CMAKE_INSTALL_BINDIR}" )
+endif()
